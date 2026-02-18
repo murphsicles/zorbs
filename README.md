@@ -1,10 +1,10 @@
 # Zorbs
 
-**Zorbs is an awesome new package manager for the Zeta language.**  
+**Zorbs is an awesome new package manager for the Zeta language.**
 
 <div align="center">
 
-![Zorbs Hero](/assets/hero.png)
+![Zorbs Hero](/assets/hero.jpg)
 
 **Build. Release. Share.**
 
