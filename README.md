@@ -4,7 +4,7 @@
 
 <div align="center">
 
-![Zorbs Hero](https://zorbs.io/assets/hero.png) <!-- Placeholder for epic hero image -->
+![Zorbs Hero](/assets/hero.png)
 
 **Build. Release. Share.**
 
