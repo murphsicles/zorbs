@@ -1,7 +1,8 @@
 use axum::{
     routing::{get, post},
-    Router, Json, response::IntoResponse,
+    Router, Json,
     http::StatusCode,
+    response::IntoResponse,
 };
 use serde_json::json;
 use tower_http::trace::TraceLayer;
@@ -9,47 +10,47 @@ use tracing_subscriber;
 
 #[tokio::main]
 async fn main() {
-    // Beautiful logging from day one
     tracing_subscriber::fmt::init();
 
     let app = Router::new()
-        // Public routes
         .route("/", get(root))
         .route("/api/health", get(health))
-        
-        // Future Zorbs API
-        .route("/api/crates", get(list_crates))
-        .route("/api/crates/new", post(publish_zorb))
-        
-        // Middleware
+        .route("/api/zorbs", get(list_zorbs))
+        .route("/api/zorbs/new", post(publish_zorb))
         .layer(TraceLayer::new_for_http());
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    tracing::info!("🚀 Zorbs registry listening on http://localhost:3000");
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
+        .await
+        .unwrap();
+
+    tracing::info!("🚀 Zorbs registry v{} listening on http://localhost:3000", env!("CARGO_PKG_VERSION"));
+    tracing::info!("   The official package registry for Zeta — powered by The Zeta Foundation");
+
     axum::serve(listener, app).await.unwrap();
 }
 
-// Welcome page
 async fn root() -> impl IntoResponse {
     Json(json!({
-        "message": "Welcome to zorbs.io — the official Zeta package registry",
+        "service": "zorbs.io",
+        "message": "Welcome to the official Zeta package registry",
+        "version": env!("CARGO_PKG_VERSION"),
         "docs": "https://docs.zorbs.io",
-        "version": env!("CARGO_PKG_VERSION")
+        "foundation": "The Zeta Foundation"
     }))
 }
 
-// Health check (used by Docker, Kubernetes, etc.)
 async fn health() -> impl IntoResponse {
-    (StatusCode::OK, Json(json!({"status": "healthy", "service": "zorbs-registry"})))
+    (StatusCode::OK, Json(json!({
+        "status": "healthy",
+        "service": "zorbs-registry"
+    })))
 }
 
-// Placeholder endpoints — we’ll fill these next
-async fn list_crates() -> impl IntoResponse {
-    // TODO: query Postgres, return paginated list
-    (StatusCode::OK, Json(json!({"crates": []})))
+// Core placeholders — we'll make these real next
+async fn list_zorbs() -> impl IntoResponse {
+    (StatusCode::OK, Json(json!({"zorbs": [], "total": 0})))
 }
 
 async fn publish_zorb() -> impl IntoResponse {
-    // TODO: trusted publishing, security scan, store tarball
-    (StatusCode::OK, Json(json!({"success": true})))
+    (StatusCode::OK, Json(json!({"message": "Zorb published successfully (stub)"})))
 }
