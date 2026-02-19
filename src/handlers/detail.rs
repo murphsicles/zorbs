@@ -5,6 +5,7 @@ use std::sync::Arc;
 use crate::state::AppState;
 use crate::db::queries;
 use crate::models::Zorb;
+use crate::views::detail::DETAIL_HTML;
 
 pub async fn zorb_detail(Path(name): Path<String>, State(state): State<Arc<AppState>>) -> Markup {
     let versions: Vec<Zorb> = queries::get_zorb_versions(&state.db, &name).await;
@@ -13,8 +14,5 @@ pub async fn zorb_detail(Path(name): Path<String>, State(state): State<Arc<AppSt
         return html! { (PreEscaped(include_str!("../../views/404.html"))) };
     }
 
-    let latest = &versions[0];
-    html! {
-        (PreEscaped(include_str!("../../views/detail.html")))
-    }
+    html! { (PreEscaped(DETAIL_HTML)) }
 }
