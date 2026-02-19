@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 use std::fs;
 use std::path::Path;
 use std::env;
-use std::io::{self, Write};
+use std::io::Write;
 use serde::{Deserialize, Serialize};
 use toml;
 use reqwest::multipart;
@@ -200,18 +200,20 @@ async fn generate_lock() {
             let url = format!("http://localhost:3000/api/resolve?name={}", name);
             match client.get(&url).send().await {
                 Ok(resp) if resp.status().is_success() => {
-                    if let Ok(data) = resp.json::<serde_json::Value>().await {
-                        if let (Some(name), Some(version), Some(download_url)) = (
-                            data.get("name").and_then(|v| v.as_str()),
-                            data.get("version").and_then(|v| v.as_str()),
-                            data.get("download_url").and_then(|v| v.as_str()),
-                        ) {
-                            packages.push(LockedPackage {
-                                name: name.to_string(),
-                                version: version.to_string(),
-                                download_url: download_url.to_string(),
-                            });
-                        }
+                    let data: serde_json::Value = match resp.json().await {
+                        Ok(d) => d,
+                        Err(_) => continue,
+                    };
+                    if let (Some(name), Some(version), Some(download_url)) = (
+                        data.get("name").and_then(|v| v.as_str()),
+                        data.get("version").and_then(|v| v.as_str()),
+                        data.get("download_url").and_then(|v| v.as_str()),
+                    ) {
+                        packages.push(LockedPackage {
+                            name: name.to_string(),
+                            version: version.to_string(),
+                            download_url: download_url.to_string(),
+                        });
                     }
                 }
                 _ => {
