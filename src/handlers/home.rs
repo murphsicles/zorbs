@@ -1,3 +1,4 @@
+// src/handlers/home.rs
 use axum::{Json, extract::{State, Query}, response::IntoResponse, http::StatusCode};
 use serde_json::json;
 use maud::{html, Markup, PreEscaped};
