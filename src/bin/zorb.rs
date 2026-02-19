@@ -30,8 +30,9 @@ enum Commands {
     },
     Publish,
     Install {
-        package: String,
+        package: Option<String>,
     },
+    Lock,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -48,6 +49,18 @@ struct Package {
     license: Option<String>,
 }
 
+#[derive(Serialize, Deserialize)]
+struct Lockfile {
+    package: Vec<LockedPackage>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct LockedPackage {
+    name: String,
+    version: String,
+    download_url: String,
+}
+
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
@@ -56,7 +69,8 @@ async fn main() {
         Commands::New { name } => new_project(&name),
         Commands::Add { package, version } => add_dependency(&package, version),
         Commands::Publish => publish().await,
-        Commands::Install { package } => install(&package).await,
+        Commands::Install { package } => install(package).await,
+        Commands::Lock => generate_lock().await,
     }
 }
 
@@ -82,7 +96,7 @@ license = "MIT"
     fs::write(dir.join("src/main.zeta"), "// Welcome to Zeta!\nfn main() {\n    print(\"Hello, Zeta!\\n\")\n}\n").unwrap();
 
     println!("Created new zorb project '{}'", name);
-    println!("cd {} && zorb publish", name);
+    println!("Next: cd {} && zorb publish", name);
 }
 
 fn add_dependency(package: &str, version: Option<String>) {
@@ -115,6 +129,7 @@ fn add_dependency(package: &str, version: Option<String>) {
     fs::write("zorb.toml", new_content).unwrap();
 
     println!("Added {} = \"{}\"", package, version);
+    println!("Run `zorb lock` to update zorb.lock");
 }
 
 async fn publish() {
@@ -149,6 +164,7 @@ async fn publish() {
     match client.post(url).multipart(form).send().await {
         Ok(resp) if resp.status().is_success() => {
             println!("Zorb published successfully!");
+            println!("Run `zorb lock` in dependent projects to update lockfiles");
         }
         Ok(resp) => {
             eprintln!("Publish failed: {}", resp.status());
@@ -159,20 +175,90 @@ async fn publish() {
     }
 }
 
-async fn install(package: &str) {
-    let url = format!("http://localhost:3000/{}/0.1.0/download", package.replace('@', "").replace('/', "-"));
+async fn generate_lock() {
+    let content = match fs::read_to_string("zorb.toml") {
+        Ok(c) => c,
+        Err(_) => {
+            eprintln!("No zorb.toml found. Run `zorb new` first.");
+            return;
+        }
+    };
 
+    let zorb: ZorbToml = match toml::from_str(&content) {
+        Ok(v) => v,
+        Err(_) => {
+            eprintln!("Invalid zorb.toml");
+            return;
+        }
+    };
+
+    let mut packages = vec![];
+
+    if let Some(deps) = zorb.dependencies {
+        let client = reqwest::Client::new();
+        for (name, _) in deps {
+            let url = format!("http://localhost:3000/api/resolve?name={}", name);
+            match client.get(&url).send().await {
+                Ok(resp) if resp.status().is_success() => {
+                    if let Ok(data) = resp.json::<serde_json::Value>().await {
+                        if let (Some(name), Some(version), Some(download_url)) = (
+                            data.get("name").and_then(|v| v.as_str()),
+                            data.get("version").and_then(|v| v.as_str()),
+                            data.get("download_url").and_then(|v| v.as_str()),
+                        ) {
+                            packages.push(LockedPackage {
+                                name: name.to_string(),
+                                version: version.to_string(),
+                                download_url: download_url.to_string(),
+                            });
+                        }
+                    }
+                }
+                _ => {
+                    eprintln!("Could not resolve {}", name);
+                }
+            }
+        }
+    }
+
+    let lockfile = Lockfile { package: packages };
+    let lock_content = toml::to_string_pretty(&lockfile).unwrap();
+    fs::write("zorb.lock", lock_content).unwrap();
+
+    println!("Generated zorb.lock with {} resolved packages", lockfile.package.len());
+}
+
+async fn install(package: Option<String>) {
+    if let Some(pkg) = package {
+        let url = format!("http://localhost:3000/{}/0.1.0/download", pkg.replace('@', "").replace('/', "-"));
+        download_single(&url, &pkg).await;
+        return;
+    }
+
+    if Path::new("zorb.lock").exists() {
+        let content = fs::read_to_string("zorb.lock").unwrap();
+        let lock: Lockfile = toml::from_str(&content).unwrap();
+        for p in lock.package {
+            download_single(&p.download_url, &p.name).await;
+        }
+    } else {
+        println!("No zorb.lock found. Generating now...");
+        generate_lock().await;
+        install(None).await;
+    }
+}
+
+async fn download_single(url: &str, name: &str) {
     let client = reqwest::Client::new();
-
-    match client.get(&url).send().await {
+    match client.get(url).send().await {
         Ok(resp) if resp.status().is_success() => {
             let bytes = resp.bytes().await.unwrap();
-            let filename = format!("{}.zorb", package.replace('/', "-"));
+            let filename = format!("{}.zorb", name.replace('/', "-"));
             fs::write(&filename, bytes).unwrap();
-            println!("Installed {} -> {}", package, filename);
+            println!("Installed {} -> {}", name, filename);
         }
         _ => {
-            eprintln!("Failed to download {}", package);
+            eprintln!("Failed to download {}", name);
         }
     }
 }
