@@ -1,7 +1,9 @@
 # Zorbs
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Crates.io](https://img.shields.io/crates/v/zorbs.svg)
-![Dependencies](https://deps.rs/repo/github/murphsicles/zorbs/status.svg)
+[![Rust](https://img.shields.io/badge/Rust-1.95%2B-green.svg)](https://www.rust-lang.org/)
+[![Edition](https://img.shields.io/badge/Edition-2024-blue.svg)](https://doc.rust-lang.org/edition-guide/rust-2021/index.html)
+[![Crates.io](https://img.shields.io/crates/v/zorbs.svg)](https://crates.io/crates/zorbs)
+[![Dependencies](https://deps.rs/repo/github/murphsicles/zorbs/status.svg)](https://deps.rs/repo/github/murphsicles/zorbs)
 
 **Zorbs is an awesome new package manager for the Zeta language.**
 <div align="center">
