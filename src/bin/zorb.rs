@@ -3,7 +3,6 @@ use clap::{Parser, Subcommand};
 use std::fs;
 use std::path::Path;
 use std::env;
-use std::io::Write;
 use serde::{Deserialize, Serialize};
 use toml;
 use reqwest::multipart;
@@ -200,7 +199,7 @@ async fn generate_lock() {
             let url = format!("http://localhost:3000/api/resolve?name={}", name);
             match client.get(&url).send().await {
                 Ok(resp) if resp.status().is_success() => {
-                    let data: serde_json::Value = match resp.json().await {
+                    let data: serde_json::Value = match resp.json::<serde_json::Value>().await {
                         Ok(d) => d,
                         Err(_) => continue,
                     };
