@@ -4,11 +4,10 @@ use serde_json::json;
 use maud::{html, Markup, PreEscaped};
 use serde::Deserialize;
 use std::sync::Arc;
-
 use crate::state::AppState;
 use crate::db::queries;
 use crate::models::Zorb;
-use crate::views::home::HOME_HTML;
+use crate::views;
 
 #[derive(Deserialize)]
 pub struct SearchParams {
@@ -16,7 +15,7 @@ pub struct SearchParams {
 }
 
 pub async fn homepage() -> Markup {
-    html! { (PreEscaped(HOME_HTML)) }
+    html! { (PreEscaped(views::HOME_HTML)) }
 }
 
 pub async fn search_zorbs(Query(params): Query<SearchParams>, State(state): State<Arc<AppState>>) -> Markup {
@@ -26,7 +25,6 @@ pub async fn search_zorbs(Query(params): Query<SearchParams>, State(state): Stat
     } else {
         queries::search_zorbs(&state.db, &term).await
     };
-
     html! {
         div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" {
             @for zorb in &zorbs {
