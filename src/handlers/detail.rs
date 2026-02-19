@@ -26,7 +26,7 @@ async fn render_detail(name: String, state: Arc<AppState>) -> Markup {
     let versions: Vec<Zorb> = queries::get_zorb_versions(&state.db, &name).await;
 
     if versions.is_empty() {
-        return html! { (PreEscaped(include_str!("../../views/404.html"))) };
+        return html! { (PreEscaped(include_str!("../views/404.html"))) };
     }
 
     let latest = &versions[0];
