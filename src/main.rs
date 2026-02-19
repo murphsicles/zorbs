@@ -334,25 +334,53 @@ async fn publish_page() -> Markup {
 }
 
 async fn zorb_detail(Path(name): Path<String>, State(state): State<Arc<AppState>>) -> Markup {
-    let zorb: Option<Zorb> = sqlx::query_as("SELECT id, name, version, description, license, repository, downloads, created_at FROM zorbs WHERE name = $1 ORDER BY created_at DESC LIMIT 1")
-        .bind(&name)
-        .fetch_optional(&state.db)
-        .await
-        .unwrap_or_default();
+    let versions: Vec<Zorb> = sqlx::query_as(
+        "SELECT id, name, version, description, license, repository, downloads, created_at 
+         FROM zorbs 
+         WHERE name = $1 
+         ORDER BY created_at DESC"
+    )
+    .bind(&name)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
 
-    if let Some(zorb) = zorb {
-        html! {
-            (PreEscaped(format!(r#"
+    if versions.is_empty() {
+        return html! {
+            (PreEscaped(r#"
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Not Found — zorbs.io</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white min-h-screen flex items-center justify-center">
+    <div class="text-center">
+        <h1 class="text-8xl font-black text-cyan-400">404</h1>
+        <p class="text-3xl mt-8">Zorb not found</p>
+        <a href="/" class="mt-12 inline-block px-10 py-4 bg-white text-black rounded-2xl font-medium">Back to Discover</a>
+    </div>
+</body>
+</html>
+            "#))
+        };
+    }
+
+    let latest = &versions[0];
+
+    html! {
+        (PreEscaped(r#"
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{name} — zorbs.io</title>
+    <title>"#)) (name) (PreEscaped(r#" — zorbs.io</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body {{ background: linear-gradient(180deg, #0a0a0a 0%, #111111 100%); }}
+        body { background: linear-gradient(180deg, #0a0a0a 0%, #111111 100%); }
     </style>
 </head>
 <body class="text-white min-h-screen">
@@ -375,15 +403,15 @@ async fn zorb_detail(Path(name): Path<String>, State(state): State<Arc<AppState>
         </div>
     </nav>
 
-    <div class="pt-28 max-w-4xl mx-auto px-8">
+    <div class="pt-28 max-w-5xl mx-auto px-8">
         <div class="flex items-start justify-between">
             <div>
-                <h1 class="text-6xl font-black tracking-tighter text-cyan-400">{name}</h1>
-                <p class="text-2xl text-zinc-400 mt-2">v{zorb.version}</p>
+                <h1 class="text-6xl font-black tracking-tighter text-cyan-400">"#)) (name) (PreEscaped(r#"</h1>
+                <p class="text-2xl text-zinc-400 mt-2">v"#)) (latest.version) (PreEscaped(r#"</p>
             </div>
             <div class="text-right">
                 <div class="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-6 py-3 rounded-3xl text-sm font-medium">
-                    <i class="fa-solid fa-download"></i> {zorb.downloads} downloads
+                    <i class="fa-solid fa-download"></i> "#)) (latest.downloads) (PreEscaped(r#" downloads
                 </div>
             </div>
         </div>
@@ -391,32 +419,95 @@ async fn zorb_detail(Path(name): Path<String>, State(state): State<Arc<AppState>
         <div class="mt-8 bg-zinc-900 border border-zinc-800 rounded-3xl p-10">
             <div class="flex items-center justify-between mb-8">
                 <div class="flex items-center gap-4">
-                    <button onclick="navigator.clipboard.writeText('zorb add {name}')" 
+                    <button onclick="navigator.clipboard.writeText('zorb add "#)) (name) (PreEscaped(r#"')" 
                             class="px-8 py-4 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-3 text-lg font-medium">
                         <i class="fa-solid fa-copy"></i>
-                        zorb add {name}
+                        zorb add "#)) (name) (PreEscaped(r#"
                     </button>
                 </div>
-                <a href="/api/zorbs/new" class="px-10 py-4 bg-cyan-400 text-black font-bold rounded-2xl flex items-center gap-3 hover:bg-cyan-300 transition">
-                    <i class="fa-solid fa-download"></i> Download latest
+                <a href="#" class="px-10 py-4 bg-cyan-400 text-black font-bold rounded-2xl flex items-center gap-3 hover:bg-cyan-300 transition">
+                    <i class="fa-solid fa-download"></i> Download latest (v"#)) (latest.version) (PreEscaped(r#")
                 </a>
             </div>
 
-            <p class="text-xl text-zinc-300 leading-relaxed">{zorb.description.unwrap_or_else(|| "No description provided yet.".to_string())}</p>
+            <p class="text-xl text-zinc-300 leading-relaxed">"#)) (latest.description.clone().unwrap_or_else(|| "No description provided yet.".to_string())) (PreEscaped(r#"</p>
 
             <div class="mt-12 grid grid-cols-3 gap-6 text-sm">
                 <div>
                     <div class="text-zinc-500">License</div>
-                    <div class="font-medium text-white mt-1">{zorb.license.unwrap_or_else(|| "MIT".to_string())}</div>
+                    <div class="font-medium text-white mt-1">"#)) (latest.license.clone().unwrap_or_else(|| "MIT".to_string())) (PreEscaped(r#"</div>
                 </div>
                 <div>
                     <div class="text-zinc-500">Repository</div>
-                    <div class="font-medium text-white mt-1 break-all">{zorb.repository.unwrap_or_else(|| "—".to_string())}</div>
+                    <div class="font-medium text-white mt-1 break-all">"#)) (latest.repository.clone().unwrap_or_else(|| "—".to_string())) (PreEscaped(r#"</div>
                 </div>
                 <div>
                     <div class="text-zinc-500">Published</div>
-                    <div class="font-medium text-white mt-1">{zorb.created_at.format("%b %d, %Y").to_string()}</div>
+                    <div class="font-medium text-white mt-1">"#)) (latest.created_at.format("%b %d, %Y").to_string()) (PreEscaped(r#"</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Dependencies Section -->
+        <div class="mt-16 bg-zinc-900 border border-zinc-800 rounded-3xl p-10">
+            <h2 class="text-3xl font-semibold mb-8 flex items-center gap-3">
+                <span class="text-cyan-400">🔗</span> Dependencies
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-zinc-950 border border-zinc-700 rounded-2xl p-6">
+                    <a href="/@zeta/tokio" class="font-mono text-cyan-400 hover:text-cyan-300">@zeta/tokio ^1.42</a>
+                    <p class="text-xs text-zinc-500 mt-1">The async runtime that powers Zeta</p>
+                </div>
+                <div class="bg-zinc-950 border border-zinc-700 rounded-2xl p-6">
+                    <a href="/@http/hyper" class="font-mono text-cyan-400 hover:text-cyan-300">@http/hyper ^1.3</a>
+                    <p class="text-xs text-zinc-500 mt-1">Low-level HTTP implementation</p>
+                </div>
+                <div class="bg-zinc-950 border border-zinc-700 rounded-2xl p-6">
+                    <a href="/@data/serde" class="font-mono text-cyan-400 hover:text-cyan-300">@data/serde ^1.0</a>
+                    <p class="text-xs text-zinc-500 mt-1">Fast &amp; safe serialization</p>
+                </div>
+                <div class="bg-zinc-950 border border-zinc-700 rounded-2xl p-6">
+                    <a href="/@logging/tracing" class="font-mono text-cyan-400 hover:text-cyan-300">@logging/tracing ^0.2</a>
+                    <p class="text-xs text-zinc-500 mt-1">Structured, performant logging</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Version History -->
+        <div class="mt-16">
+            <h2 class="text-3xl font-semibold mb-8 flex items-center gap-3">
+                <span class="text-cyan-400">📜</span> Version History
+            </h2>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-zinc-950">
+                        <tr>
+                            <th class="px-8 py-5 text-left text-sm font-medium text-zinc-400">Version</th>
+                            <th class="px-8 py-5 text-left text-sm font-medium text-zinc-400">Published</th>
+                            <th class="px-8 py-5 text-left text-sm font-medium text-zinc-400">Downloads</th>
+                            <th class="px-8 py-5 text-right text-sm font-medium text-zinc-400">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-zinc-800">
+"#))
+            @for v in &versions {
+                html! {
+                    tr class="hover:bg-zinc-800 transition" {
+                        td class="px-8 py-6 font-mono text-cyan-400" { (v.version) }
+                        td class="px-8 py-6 text-zinc-400" { (v.created_at.format("%b %d, %Y").to_string()) }
+                        td class="px-8 py-6 text-zinc-400" { (v.downloads) " downloads" }
+                        td class="px-8 py-6 text-right" {
+                            a href="#" class="text-cyan-400 hover:text-cyan-300 font-medium flex items-center justify-end gap-2" {
+                                "Download "
+                                i class="fa-solid fa-arrow-down" {}
+                            }
+                        }
+                    }
+                }
+            }
+            (PreEscaped(r#"
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -424,26 +515,6 @@ async fn zorb_detail(Path(name): Path<String>, State(state): State<Arc<AppState>
     <footer class="border-t border-zinc-800 py-12 text-center text-zinc-500 text-sm mt-20">
         Powered by The Zeta Foundation • © 2026 zorbs.io
     </footer>
-</body>
-</html>
-            "#)))
-        }
-    } else {
-        html! {
-            (PreEscaped(r#"
-<!DOCTYPE html>
-<html lang="en" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <title>Not Found — zorbs.io</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-black text-white min-h-screen flex items-center justify-center">
-    <div class="text-center">
-        <h1 class="text-8xl font-black text-cyan-400">404</h1>
-        <p class="text-3xl mt-8">Zorb not found</p>
-        <a href="/" class="mt-12 inline-block px-10 py-4 bg-white text-black rounded-2xl font-medium">Back to Discover</a>
-    </div>
 </body>
 </html>
             "#))
