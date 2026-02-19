@@ -5,14 +5,14 @@
 
 pub const MVP_REMAINING: &str = r#"
 # Zorbs MVP (Shippable Registry)
-## Remaining Items (3 total)
-- [ ] 1. zorb.lock generation
-  CLI + registry produce reproducible lockfiles
-- [ ] 2. Basic security & validation
+## Remaining Items (2 total)
+- [ ] 1. Basic security & validation
   File size limits, path sanitization, zorb.toml validation
 ## Completed
+- [x] zorb.lock generation
+  CLI + registry produce reproducible lockfiles
 - [x] Bootstrap zorb CLI (Rust reference impl)
-  `zorb new`, `zorb add`, `zorb publish`, `zorb install`
+  `zorb new`, `zorb add`, `zorb publish`, `zorb install`, `zorb lock`
 - [x] Download endpoint
 - [x] Real zorb.toml parsing on publish
 - [x] Dockerfile + docker-compose.yml
@@ -39,6 +39,6 @@ pub const POST_MVP_V1: &str = r#"
 "#;
 
 pub const STATUS: &str = r#"
-Current status: 11/13 MVP items complete (85%)
-Next priority: zorb.lock generation
+Current status: 12/13 MVP items complete (92%)
+Next priority: Basic security & validation
 "#;
