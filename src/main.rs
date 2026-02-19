@@ -34,7 +34,7 @@ async fn main() {
     sqlx::migrate!()
         .run(&pool)
         .await
-        .expect("Failed to run migrations");
+        .expect("Failed to run database migrations");
 
     let state = Arc::new(AppState { db: pool });
 
@@ -43,112 +43,154 @@ async fn main() {
         .route("/api/health", get(health))
         .route("/api/zorbs", get(list_zorbs))
         .route("/api/zorbs/new", post(publish_zorb))
-        .route("/api/search", get(search_zorbs))  // HTMX endpoint
+        .route("/api/search", get(search_zorbs))
         .with_state(state)
         .layer(TraceLayer::new_for_http());
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
 
-    tracing::info!("🚀 Zorbs registry + homepage listening on http://localhost:3000");
+    tracing::info!("🚀 Zorbs registry v{} listening on http://localhost:3000", env!("CARGO_PKG_VERSION"));
+
     axum::serve(listener, app).await.unwrap();
 }
 
-// === BEAUTIFUL HTMX HOMEPAGE ===
 async fn homepage() -> Markup {
     html! {
         (PreEscaped(r#"
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>zorbs.io — Zeta Package Registry</title>
     <script src="https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         body { background: linear-gradient(180deg, #0a0a0a 0%, #111111 100%); }
-        .glow-cyan { text-shadow: 0 0 20px #22d3ee; }
-        .card-hover { transition: all 0.2s; }
-        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgb(34 211 238 / 0.1); }
+        .hero-glow { text-shadow: 0 0 40px rgb(34 211 238); }
+        .zorb-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .zorb-card:hover { transform: translateY(-8px); box-shadow: 0 25px 50px -12px rgb(34 211 238 / 0.25); }
     </style>
 </head>
-<body class="text-white">
-    <nav class="border-b border-zinc-800 bg-black/80 backdrop-blur-md fixed w-full z-50">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+<body class="text-white min-h-screen">
+    <!-- Navbar -->
+    <nav class="border-b border-zinc-800 bg-black/90 backdrop-blur-lg fixed w-full z-50">
+        <div class="max-w-screen-2xl mx-auto px-8 py-5 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <span class="text-3xl font-bold tracking-tighter text-cyan-400">Z</span>
-                <span class="text-2xl font-semibold tracking-tighter">ORBS</span>
+                <span class="text-4xl font-black tracking-tighter text-cyan-400">Z</span>
+                <span class="text-3xl font-semibold tracking-tighter">ORBS</span>
             </div>
-            <div class="flex items-center gap-8 text-sm">
-                <a href="#" class="hover:text-cyan-400 transition">Discover</a>
-                <a href="#" class="hover:text-cyan-400 transition">Publish</a>
-                <a href="#" class="hover:text-cyan-400 transition">Docs</a>
-                <a href="#" class="hover:text-cyan-400 transition">Blog</a>
-                <button onclick="window.location.href='/login'" 
-                        class="px-6 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-medium rounded-xl transition">
-                    Login with GitHub
-                </button>
+            <div class="flex items-center gap-10 text-sm font-medium">
+                <a href="#" class="hover:text-cyan-400 transition-colors">Discover</a>
+                <a href="#" class="hover:text-cyan-400 transition-colors">Publish</a>
+                <a href="#" class="hover:text-cyan-400 transition-colors">Docs</a>
+                <a href="#" class="hover:text-cyan-400 transition-colors">Blog</a>
             </div>
+            <button class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2">
+                <i class="fa-brands fa-github"></i>
+                Login with GitHub
+            </button>
         </div>
     </nav>
 
-    <div class="pt-24 pb-16 px-6 max-w-7xl mx-auto">
-        <div class="text-center mt-20">
-            <h1 class="text-7xl font-bold tracking-tighter glow-cyan">ZORBS</h1>
-            <p class="text-3xl mt-4 text-zinc-400">Build. Release. Share.</p>
-            <p class="text-xl text-zinc-500 mt-6 max-w-2xl mx-auto">
-                The official package registry for the Zeta systems language.<br>
+    <div class="pt-28 pb-20">
+        <div class="max-w-screen-2xl mx-auto px-8 text-center">
+            <h1 class="text-8xl font-black tracking-tighter hero-glow">ZORBS</h1>
+            <p class="text-4xl mt-4 text-zinc-300">Build. Release. Share.</p>
+            <p class="mt-8 text-xl text-zinc-400 max-w-3xl mx-auto">
+                The official package registry for Zeta.<br>
                 Where Rust uses crates, Zeta uses zorbs.
             </p>
-        </div>
 
-        <!-- Live Search -->
-        <div class="max-w-2xl mx-auto mt-12">
-            <input id="search" 
-                   type="text" 
-                   placeholder="Search 10,000+ zorbs (e.g. http server for embedded Zeta)"
-                   class="w-full bg-zinc-900 border border-zinc-700 focus:border-cyan-400 rounded-2xl px-8 py-6 text-lg outline-none transition placeholder-zinc-500"
-                   hx-get="/api/search"
-                   hx-trigger="keyup changed delay:300ms"
-                   hx-target="#results"
-                   hx-indicator="#loading">
-            <div id="loading" class="htmx-indicator text-center text-cyan-400 mt-2">Searching...</div>
-        </div>
-
-        <div id="results" class="mt-8"></div>
-    </div>
-
-    <!-- Stats -->
-    <div class="bg-zinc-950 py-12 border-t border-b border-zinc-800">
-        <div class="max-w-7xl mx-auto grid grid-cols-4 gap-8 px-6 text-center">
-            <div><div class="text-4xl font-bold text-cyan-400">12,458</div><div class="text-zinc-500">Zorbs</div></div>
-            <div><div class="text-4xl font-bold text-cyan-400">3.2M</div><div class="text-zinc-500">Downloads</div></div>
-            <div><div class="text-4xl font-bold text-cyan-400">892</div><div class="text-zinc-500">Contributors</div></div>
-            <div><div class="text-4xl font-bold text-cyan-400">100%</div><div class="text-zinc-500">Uptime</div></div>
-        </div>
-    </div>
-
-    <!-- Trending -->
-    <div class="max-w-7xl mx-auto px-6 py-16">
-        <h2 class="text-3xl font-semibold mb-8">Trending this week</h2>
-        <div class="grid grid-cols-4 gap-6">
-            <!-- Static beautiful cards for demo -->
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 card-hover">
-                <div class="flex justify-between"><span class="text-cyan-400 font-mono">@zeta/axum</span><span class="text-xs bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full">v0.7.2</span></div>
-                <p class="mt-3 text-zinc-400 text-sm">Ergonomic HTTP server for Zeta</p>
-                <div class="mt-6 flex items-center gap-4 text-xs text-zinc-500">
-                    <span>★ 1.2k</span>
-                    <span>↓ 248k</span>
+            <!-- Search -->
+            <div class="max-w-3xl mx-auto mt-16">
+                <div class="relative">
+                    <input 
+                        id="search-input"
+                        type="text" 
+                        placeholder="Search zorbs... (e.g. async runtime, http server, json parser)"
+                        class="w-full bg-zinc-900 border border-zinc-700 focus:border-cyan-500 rounded-3xl px-8 py-7 text-lg outline-none transition-all"
+                        hx-get="/api/search"
+                        hx-trigger="keyup changed delay:250ms"
+                        hx-target="#search-results"
+                        hx-indicator="#search-loading">
+                    <div id="search-loading" class="htmx-indicator absolute right-8 top-1/2 -translate-y-1/2 text-cyan-400">
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                    </div>
                 </div>
             </div>
-            <!-- Repeat similar for tokio, serde, tracing -->
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 card-hover">... (same style)</div>
-            <!-- etc -->
+        </div>
+
+        <div id="search-results" class="max-w-screen-2xl mx-auto px-8 mt-12"></div>
+
+        <!-- Trending -->
+        <div class="max-w-screen-2xl mx-auto px-8 mt-20">
+            <h2 class="text-3xl font-semibold mb-10 flex items-center gap-3">
+                <span class="text-cyan-400">🔥</span> Trending this week
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="zorb-card bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="font-mono text-cyan-400">@zeta/tokio</span>
+                            <p class="text-zinc-400 mt-2 text-sm">The async runtime that powers Zeta</p>
+                        </div>
+                        <span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full">v1.42.0</span>
+                    </div>
+                    <div class="mt-8 text-xs text-zinc-500 flex gap-6">
+                        <span>↓ 428k</span>
+                        <span>★ 3.8k</span>
+                    </div>
+                </div>
+                
+                <div class="zorb-card bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="font-mono text-cyan-400">@http/axum</span>
+                            <p class="text-zinc-400 mt-2 text-sm">Ergonomic web framework</p>
+                        </div>
+                        <span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full">v0.8.1</span>
+                    </div>
+                    <div class="mt-8 text-xs text-zinc-500 flex gap-6">
+                        <span>↓ 312k</span>
+                        <span>★ 2.9k</span>
+                    </div>
+                </div>
+
+                <div class="zorb-card bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="font-mono text-cyan-400">@data/serde</span>
+                            <p class="text-zinc-400 mt-2 text-sm">Fast &amp; safe serialization</p>
+                        </div>
+                        <span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full">v1.0.210</span>
+                    </div>
+                    <div class="mt-8 text-xs text-zinc-500 flex gap-6">
+                        <span>↓ 289k</span>
+                        <span>★ 4.1k</span>
+                    </div>
+                </div>
+
+                <div class="zorb-card bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="font-mono text-cyan-400">@logging/tracing</span>
+                            <p class="text-zinc-400 mt-2 text-sm">Structured, performant logging</p>
+                        </div>
+                        <span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full">v0.2.5</span>
+                    </div>
+                    <div class="mt-8 text-xs text-zinc-500 flex gap-6">
+                        <span>↓ 197k</span>
+                        <span>★ 1.7k</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <footer class="border-t border-zinc-800 py-12 text-center text-zinc-500 text-sm">
-        The Zeta Foundation © 2026 • Made with ❤️ for the Zeta community
+        Powered by The Zeta Foundation • © 2026 zorbs.io
     </footer>
 </body>
 </html>
@@ -156,19 +198,32 @@ async fn homepage() -> Markup {
     }
 }
 
-// === HTMX SEARCH ENDPOINT (returns HTML fragment) ===
 async fn search_zorbs() -> Markup {
-    // In real version we'd query the DB here
     html! {
-        div class="grid grid-cols-3 gap-6 max-w-7xl mx-auto" {
-            div class="bg-zinc-900 border border-cyan-400/30 rounded-3xl p-6" {
-                "🔍 Found 42 results for your search..."
+        div class="grid grid-cols-1 md:grid-cols-3 gap-6" {
+            div class="bg-zinc-900 border border-emerald-500/30 rounded-3xl p-8 text-center" {
+                p class="text-emerald-400 font-medium" { "🔍 Live search coming soon..." }
+                p class="text-zinc-400 text-sm mt-2" { "Type in the search box above" }
             }
         }
     }
 }
 
-// Existing routes unchanged...
-async fn health() -> impl IntoResponse { /* ... */ }
-async fn list_zorbs(State(_state): State<Arc<AppState>>) -> impl IntoResponse { /* ... */ }
-async fn publish_zorb(State(_state): State<Arc<AppState>>) -> impl IntoResponse { /* ... */ }
+async fn health() -> impl IntoResponse {
+    (StatusCode::OK, Json(json!({"status": "healthy", "service": "zorbs-registry"})))
+}
+
+async fn list_zorbs(State(_state): State<Arc<AppState>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(json!({
+        "zorbs": [],
+        "total": 0,
+        "message": "Endpoint ready - database connected"
+    })))
+}
+
+async fn publish_zorb(State(_state): State<Arc<AppState>>) -> impl IntoResponse {
+    (StatusCode::OK, Json(json!({
+        "success": true,
+        "message": "Zorb received. Full publishing pipeline coming soon."
+    })))
+}
