@@ -1,13 +1,16 @@
 # Zorbs
-**Zorbs is an awesome new package manager for the Zeta language.**
-<div align="center">
-![Zorbs Hero](/assets/hero.jpg)
-**Build. Release. Share.**
-</div>
-
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Crates.io](https://img.shields.io/crates/v/zorbs.svg)
 ![Dependencies](https://deps.rs/repo/github/murphsicles/zorbs/status.svg)
+
+**Zorbs is an awesome new package manager for the Zeta language.**
+<div align="center">
+
+![Zorbs Hero](/assets/hero.jpg)
+
+**Build. Release. Share.**
+
+</div>
 
 ## The Vision
 Zeta is ready. The world needs a package manager that doesn't just work — it **inspires**.
