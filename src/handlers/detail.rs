@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::state::AppState;
 use crate::db::queries;
 use crate::models::Zorb;
-use crate::views::detail::DETAIL_HTML;
+use crate::views;
 
 pub async fn zorb_detail(
     Path(name): Path<String>,
@@ -32,7 +32,7 @@ async fn render_detail(name: String, state: Arc<AppState>) -> Markup {
     let latest = &versions[0];
     let download_url = format!("/{}/{}/download", name.replace('@', "").replace('/', "-"), latest.version);
 
-    let mut page = DETAIL_HTML.to_string();
+    let mut page = views::DETAIL_HTML.to_string();
 
     page = page.replace("{{name}}", &latest.name);
     page = page.replace("{{latest.version}}", &latest.version);
