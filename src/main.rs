@@ -1,7 +1,4 @@
 // src/main.rs
-use axum::Router;
-use tower_http::trace::TraceLayer;
-use tracing_subscriber;
 mod config;
 mod state;
 mod error;
@@ -12,18 +9,29 @@ mod views;
 mod routes;
 mod utils;
 
+use axum::Router;
+use tokio::net::TcpListener;
+use tower_http::trace::TraceLayer;
+use tracing_subscriber;
+
+use crate::config::Config;
+use crate::routes::create_router;
+use crate::state::AppState;
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
+
+    let config = Config::load();
     let state = state::new();
-    db::run_migrations(&state.db).await;
-    let app = Router::new()
-        .merge(routes::routes())
-        .with_state(state)
+
+    let app = create_router(state)
         .layer(TraceLayer::new_for_http());
-    let listener = tokio::net::TcpListener::bind(config::addr())
+
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", config.port))
         .await
-        .expect("Failed to bind");
-    tracing::info!("🚀 Zorbs registry listening on {}", config::addr());
+        .expect("Failed to bind to port 3000");
+
+    println!("🚀 Zorbs registry listening on http://localhost:{}", config.port);
     axum::serve(listener, app).await.unwrap();
 }
