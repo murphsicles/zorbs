@@ -1,6 +1,21 @@
-debug
-target
+# .gitignore
+# Never commit sensitive files
 .env
+
+# Rust build artifacts
+target/
+Cargo.lock
+
+# Uploads directory (contains published .zorb files)
+uploads/
+
+# Editor / OS files
+.DS_Store
+.vscode/
+.idea/
+
+# Other blocked files
+debug
 **/*.rs.bk
 *.pdb
 **/mutants.out*/
