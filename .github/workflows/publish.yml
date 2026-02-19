@@ -1,5 +1,4 @@
-// .github/workflows/publish.yml
-name: Publish to crates.io
+name: Publish
 
 on:
   push:
