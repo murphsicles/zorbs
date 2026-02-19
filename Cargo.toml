@@ -26,6 +26,7 @@ maud = "0.26"
 toml = "0.8"
 tar = "0.4"
 flate2 = "1.0"
+semver = "1.0"
 
 # CLI
 clap = { version = "4.5", features = ["derive"] }
