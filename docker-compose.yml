@@ -1,4 +1,3 @@
-// docker-compose.yml
 services:
   db:
     image: postgres:16
