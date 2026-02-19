@@ -16,4 +16,5 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/api/zorbs", get(crate::handlers::home::list_zorbs))
         .route("/api/zorbs/new", post(crate::handlers::publish::publish_zorb))
         .route("/api/search", get(crate::handlers::home::search_zorbs))
+        .route("/api/resolve", get(crate::handlers::resolve::resolve_package))
 }
