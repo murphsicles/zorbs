@@ -1,22 +1,10 @@
-// src/state.rs
-use axum::extract::FromRef;
-use sqlx::PgPool;
+/// src/state.rs
+use std::collections::HashMap;
 use std::sync::Arc;
-use crate::config;
+use tokio::sync::Mutex;
 
-#[derive(Clone)]
-pub struct AppState {
-    pub db: PgPool,
-}
+pub type AppState = Arc<Mutex<HashMap<String, Vec<u8>>>>;
 
-pub fn new() -> Arc<AppState> {
-    let db = PgPool::connect_lazy(&config::database_url())
-        .expect("Failed to create DB pool");
-    Arc::new(AppState { db })
-}
-
-impl FromRef<Arc<AppState>> for PgPool {
-    fn from_ref(state: &Arc<AppState>) -> PgPool {
-        state.db.clone()
-    }
+pub fn new() -> AppState {
+    Arc::new(Mutex::new(HashMap::new()))
 }
