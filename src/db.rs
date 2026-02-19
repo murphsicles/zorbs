@@ -1,3 +1,4 @@
+// src/db.rs
 use sqlx::PgPool;
 
 pub async fn run_migrations(pool: &PgPool) {
