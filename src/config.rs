@@ -1,24 +1,17 @@
-use dotenvy::dotenv;
+// src/config.rs
 use std::env;
 
-#[derive(Clone)]
-pub struct Config {
-    pub port: u16,
-    pub database_url: String,
-    pub upload_dir: String,
+pub fn addr() -> String {
+    env::var("BIND_ADDR")
+        .unwrap_or_else(|_| "0.0.0.0:3000".to_string())
 }
 
-impl Config {
-    pub fn load() -> Self {
-        dotenv().ok();
-        let port = env::var("PORT")
-            .unwrap_or_else(|_| "3000".to_string())
-            .parse()
-            .unwrap_or(3000);
-        let database_url = env::var("DATABASE_URL")
-            .expect("DATABASE_URL must be set");
-        let upload_dir = env::var("UPLOAD_DIR")
-            .unwrap_or_else(|_| "uploads".to_string());
-        Self { port, database_url, upload_dir }
-    }
+pub fn database_url() -> String {
+    env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set in .env")
+}
+
+pub fn upload_dir() -> String {
+    env::var("UPLOAD_DIR")
+        .unwrap_or_else(|_| "uploads".to_string())
 }
