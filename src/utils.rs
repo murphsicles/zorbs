@@ -105,7 +105,7 @@ pub fn parse_zorb_toml(file_bytes: &[u8]) -> Result<NewZorb, String> {
     let decoder = GzDecoder::new(cursor);
     let mut archive = Archive::new(decoder);
 
-    let mut entries = match archive.entries() {
+    let entries = match archive.entries() {
         Ok(e) => e,
         Err(e) => return Err(format!("Failed to read tar archive: {}", e)),
     };
