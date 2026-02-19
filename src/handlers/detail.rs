@@ -30,7 +30,7 @@ async fn render_detail(name: String, state: Arc<AppState>) -> Markup {
     }
 
     let latest = &versions[0];
-    let download_url = format!("/{}/{}/download", name, latest.version);
+    let download_url = format!("/{}/{}/download", name.replace('@', "").replace('/', "-"), latest.version);
 
     let mut page = DETAIL_HTML.to_string();
 
@@ -53,10 +53,7 @@ async fn render_detail(name: String, state: Arc<AppState>) -> Markup {
         "{{latest.created_at}}",
         &latest.created_at.format("%b %d, %Y").to_string()
     );
-    page = page.replace(
-        r#<a href="#" class="px-10 py-4 bg-cyan-400 text-black font-bold rounded-2xl flex items-center gap-3 hover:bg-cyan-300 transition">#,
-        &format!(r#<a href="{}" class="px-10 py-4 bg-cyan-400 text-black font-bold rounded-2xl flex items-center gap-3 hover:bg-cyan-300 transition">#, download_url)
-    );
+    page = page.replace(r#"href="#"#, &format!(r#"href="{}"#, download_url));
 
     html! { (PreEscaped(page)) }
 }
