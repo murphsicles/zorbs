@@ -41,9 +41,9 @@ pub async fn publish_zorb(mut multipart: Multipart, State(state): State<Arc<AppS
 
     let new_zorb = match utils::parse_zorb_toml(&file_bytes_vec) {
         Ok(parsed) => parsed,
-        Err(_) => {
+        Err(err) => {
             if form_name.is_empty() || form_version.is_empty() {
-                return (StatusCode::BAD_REQUEST, Json(json!({"error": "Missing name/version (provide zorb.toml in tarball or fill form)"})));
+                return (StatusCode::BAD_REQUEST, Json(json!({"error": err})));
             }
             NewZorb {
                 name: form_name,
@@ -85,6 +85,6 @@ pub async fn publish_zorb(mut multipart: Multipart, State(state): State<Arc<AppS
         "id": id,
         "name": new_zorb.name,
         "version": new_zorb.version,
-        "message": "Zorb published successfully! Metadata extracted from zorb.toml."
+        "message": "Zorb published successfully! Metadata validated and extracted from zorb.toml."
     })))
 }
