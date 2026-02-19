@@ -1,6 +1,6 @@
 use axum::{
     routing::{get, post},
-    Router, Json, extract::{State, Query},
+    Router, Json, extract::{State, Query, Multipart},
     http::StatusCode,
     response::IntoResponse,
 };
@@ -12,6 +12,9 @@ use std::sync::Arc;
 use maud::{html, Markup, PreEscaped};
 use crate::models::Zorb;
 use serde::Deserialize;
+use std::path::Path;
+use tokio::fs;
+use uuid::Uuid;
 
 mod models;
 
@@ -83,7 +86,6 @@ async fn homepage() -> Markup {
     </style>
 </head>
 <body class="text-white min-h-screen">
-    <!-- Navbar -->
     <nav class="border-b border-zinc-800 bg-black/90 backdrop-blur-lg fixed w-full z-50">
         <div class="max-w-screen-2xl mx-auto px-8 py-5 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -112,7 +114,6 @@ async fn homepage() -> Markup {
                 Where Rust uses crates, Zeta uses zorbs.
             </p>
 
-            <!-- Search -->
             <div class="max-w-3xl mx-auto mt-16">
                 <div class="relative">
                     <input 
@@ -133,7 +134,6 @@ async fn homepage() -> Markup {
 
         <div id="search-results" class="max-w-screen-2xl mx-auto px-8 mt-12"></div>
 
-        <!-- Trending -->
         <div class="max-w-screen-2xl mx-auto px-8 mt-20">
             <h2 class="text-3xl font-semibold mb-10 flex items-center gap-3">
                 <span class="text-cyan-400">🔥</span> Trending this week
@@ -152,7 +152,6 @@ async fn homepage() -> Markup {
                         <span>★ 3.8k</span>
                     </div>
                 </div>
-                
                 <div class="zorb-card bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
                     <div class="flex justify-between items-start">
                         <div>
@@ -166,7 +165,6 @@ async fn homepage() -> Markup {
                         <span>★ 2.9k</span>
                     </div>
                 </div>
-
                 <div class="zorb-card bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
                     <div class="flex justify-between items-start">
                         <div>
@@ -180,7 +178,6 @@ async fn homepage() -> Markup {
                         <span>★ 4.1k</span>
                     </div>
                 </div>
-
                 <div class="zorb-card bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
                     <div class="flex justify-between items-start">
                         <div>
@@ -250,21 +247,62 @@ async fn search_zorbs(Query(params): Query<SearchParams>, State(state): State<Ar
     }
 }
 
+async fn publish_zorb(mut multipart: Multipart, State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    let mut name = String::new();
+    let mut version = String::new();
+    let mut description = None;
+    let mut file_bytes = None;
+
+    while let Some(field) = multipart.next_field().await.unwrap() {
+        match field.name() {
+            Some("name") => name = field.text().await.unwrap(),
+            Some("version") => version = field.text().await.unwrap(),
+            Some("description") => description = Some(field.text().await.unwrap()),
+            Some("file") => {
+                file_bytes = Some(field.bytes().await.unwrap());
+            }
+            _ => {}
+        }
+    }
+
+    if name.is_empty() || version.is_empty() || file_bytes.is_none() {
+        return (StatusCode::BAD_REQUEST, Json(json!({"error": "Missing name, version or file"})));
+    }
+
+    let filename = format!("{}-{}.zorb", name.replace('/', "_"), version);
+    let upload_path = format!("uploads/{}", filename);
+    fs::create_dir_all("uploads").await.unwrap();
+    fs::write(&upload_path, file_bytes.unwrap()).await.unwrap();
+
+    let zorb_id = Uuid::new_v4();
+    sqlx::query!(
+        "INSERT INTO zorbs (id, name, version, description, downloads, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, 0, NOW(), NOW())
+         ON CONFLICT (name, version) DO UPDATE SET updated_at = NOW()",
+        zorb_id,
+        name,
+        version,
+        description
+    )
+    .execute(&state.db)
+    .await
+    .unwrap();
+
+    tracing::info!("Zorb published: {} v{}", name, version);
+
+    (StatusCode::CREATED, Json(json!({
+        "success": true,
+        "id": zorb_id,
+        "name": name,
+        "version": version,
+        "message": "Zorb published successfully!"
+    })))
+}
+
 async fn health() -> impl IntoResponse {
     (StatusCode::OK, Json(json!({"status": "healthy", "service": "zorbs-registry"})))
 }
 
 async fn list_zorbs(State(_state): State<Arc<AppState>>) -> impl IntoResponse {
-    (StatusCode::OK, Json(json!({
-        "zorbs": [],
-        "total": 0,
-        "message": "Endpoint ready - database connected"
-    })))
-}
-
-async fn publish_zorb(State(_state): State<Arc<AppState>>) -> impl IntoResponse {
-    (StatusCode::OK, Json(json!({
-        "success": true,
-        "message": "Zorb received. Full publishing pipeline coming soon."
-    })))
+    (StatusCode::OK, Json(json!({"zorbs": [], "total": 0})))
 }
