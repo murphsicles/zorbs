@@ -6,25 +6,27 @@ use axum::{
 };
 use std::sync::Arc;
 use tokio::fs;
-use crate::{state::AppState, config, db::queries};
+use crate::state::AppState;
+use crate::config;
+use crate::utils;
 
 async fn serve_file(name: String, version: String, state: Arc<AppState>) -> impl IntoResponse {
-    let filename = crate::utils::zorb_filename(&name, &version); // reuse your existing helper
-    let path = format!("{}/{}", config::upload_dir(), filename);
+    let filename = utils::zorb_filename(&name, &version);
+    let upload_path = format!("{}/{}", config::upload_dir(), filename);
 
-    if !fs::try_exists(&path).await.unwrap_or(false) {
+    if !fs::try_exists(&upload_path).await.unwrap_or(false) {
         return (StatusCode::NOT_FOUND, "Zorb not found").into_response();
     }
 
-    // Increment download count
     let _ = sqlx::query!(
         "UPDATE zorbs SET downloads = downloads + 1 WHERE name = $1 AND version = $2",
-        name, version
+        name,
+        version
     )
     .execute(&state.db)
     .await;
 
-    match fs::read(&path).await {
+    match fs::read(&upload_path).await {
         Ok(bytes) => {
             let mut headers = header::HeaderMap::new();
             headers.insert(
@@ -39,11 +41,10 @@ async fn serve_file(name: String, version: String, state: Arc<AppState>) -> impl
             );
             (headers, bytes).into_response()
         }
-        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to read file").into_response(),
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to read zorb file").into_response(),
     }
 }
 
-// Flat name (if we ever support them)
 pub async fn download_zorb(
     Path((name, version)): Path<(String, String)>,
     State(state): State<Arc<AppState>>,
@@ -51,7 +52,6 @@ pub async fn download_zorb(
     serve_file(name, version, state).await
 }
 
-// Scoped name (@scope/name)
 pub async fn download_zorb_scoped(
     Path((scope, name, version)): Path<(String, String, String)>,
     State(state): State<Arc<AppState>>,
