@@ -12,7 +12,6 @@ use std::sync::Arc;
 use maud::{html, Markup, PreEscaped};
 use crate::models::Zorb;
 use serde::Deserialize;
-use std::path::Path;
 use tokio::fs;
 use uuid::Uuid;
 
@@ -52,6 +51,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(homepage))
+        .route("/publish", get(publish_page))
         .route("/api/health", get(health))
         .route("/api/zorbs", get(list_zorbs))
         .route("/api/zorbs/new", post(publish_zorb))
@@ -93,8 +93,8 @@ async fn homepage() -> Markup {
                 <span class="text-3xl font-semibold tracking-tighter">ORBS</span>
             </div>
             <div class="flex items-center gap-10 text-sm font-medium">
-                <a href="#" class="hover:text-cyan-400 transition-colors">Discover</a>
-                <a href="#" class="hover:text-cyan-400 transition-colors">Publish</a>
+                <a href="/" class="hover:text-cyan-400 transition-colors">Discover</a>
+                <a href="/publish" class="hover:text-cyan-400 transition-colors">Publish</a>
                 <a href="#" class="hover:text-cyan-400 transition-colors">Docs</a>
                 <a href="#" class="hover:text-cyan-400 transition-colors">Blog</a>
             </div>
@@ -198,6 +198,134 @@ async fn homepage() -> Markup {
     <footer class="border-t border-zinc-800 py-12 text-center text-zinc-500 text-sm">
         Powered by The Zeta Foundation • © 2026 zorbs.io
     </footer>
+</body>
+</html>
+        "#))
+    }
+}
+
+async fn publish_page() -> Markup {
+    html! {
+        (PreEscaped(r#"
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publish — zorbs.io</title>
+    <script src="https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { background: linear-gradient(180deg, #0a0a0a 0%, #111111 100%); }
+        .drop-zone { transition: all 0.3s; }
+        .drop-zone.dragover { background-color: rgb(34 211 238 / 0.1); border-color: rgb(34 211 238); }
+    </style>
+</head>
+<body class="text-white min-h-screen">
+    <nav class="border-b border-zinc-800 bg-black/90 backdrop-blur-lg fixed w-full z-50">
+        <div class="max-w-screen-2xl mx-auto px-8 py-5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="text-4xl font-black tracking-tighter text-cyan-400">Z</span>
+                <span class="text-3xl font-semibold tracking-tighter">ORBS</span>
+            </div>
+            <div class="flex items-center gap-10 text-sm font-medium">
+                <a href="/" class="hover:text-cyan-400 transition-colors">Discover</a>
+                <a href="/publish" class="text-cyan-400 font-semibold">Publish</a>
+                <a href="#" class="hover:text-cyan-400 transition-colors">Docs</a>
+                <a href="#" class="hover:text-cyan-400 transition-colors">Blog</a>
+            </div>
+            <button class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2">
+                <i class="fa-brands fa-github"></i>
+                Login with GitHub
+            </button>
+        </div>
+    </nav>
+
+    <div class="pt-28 max-w-2xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <h1 class="text-6xl font-black tracking-tighter">Publish a Zorb</h1>
+            <p class="text-xl text-zinc-400 mt-4">Share your Zeta library with the world in seconds</p>
+        </div>
+
+        <form id="publish-form" 
+              hx-post="/api/zorbs/new" 
+              hx-swap="outerHTML" 
+              class="bg-zinc-900 border border-zinc-800 rounded-3xl p-10 space-y-8">
+
+            <div>
+                <label class="block text-sm font-medium text-zinc-400 mb-2">Package Name</label>
+                <input type="text" name="name" required placeholder="@myteam/my-awesome-zorb" 
+                       class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-2xl px-6 py-4 text-lg outline-none">
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-zinc-400 mb-2">Version</label>
+                    <input type="text" name="version" required placeholder="0.1.0" 
+                           class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-2xl px-6 py-4 text-lg outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-zinc-400 mb-2">License</label>
+                    <select name="license" class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-2xl px-6 py-4 text-lg outline-none">
+                        <option value="MIT">MIT</option>
+                        <option value="Apache-2.0">Apache-2.0</option>
+                        <option value="MIT OR Apache-2.0">MIT OR Apache-2.0</option>
+                        <option value="GPL-3.0">GPL-3.0</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-zinc-400 mb-2">Description</label>
+                <textarea name="description" rows="4" placeholder="A blazing fast HTTP server for Zeta..." 
+                          class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-3xl px-6 py-4 text-lg outline-none resize-none"></textarea>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-zinc-400 mb-2">Repository URL (optional)</label>
+                <input type="text" name="repository" placeholder="https://github.com/you/my-zorb" 
+                       class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-2xl px-6 py-4 text-lg outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-zinc-400 mb-3">Zorb File (.zorb or .tar.gz)</label>
+                <div id="drop-zone" 
+                     class="drop-zone border-2 border-dashed border-zinc-700 hover:border-cyan-400 rounded-3xl p-12 text-center cursor-pointer"
+                     onclick="document.getElementById('file').click()">
+                    <i class="fa-solid fa-cloud-upload-alt text-6xl text-cyan-400 mb-4"></i>
+                    <p class="text-lg">Drag & drop your .zorb file here</p>
+                    <p class="text-sm text-zinc-500 mt-2">or click to browse</p>
+                    <input type="file" id="file" name="file" accept=".zorb,.tar.gz" class="hidden">
+                </div>
+            </div>
+
+            <button type="submit" 
+                    class="w-full bg-cyan-400 hover:bg-cyan-300 text-black font-bold py-6 rounded-3xl text-xl transition-all flex items-center justify-center gap-3">
+                <i class="fa-solid fa-rocket"></i>
+                Publish to zorbs.io
+            </button>
+        </form>
+
+        <div id="publish-result" class="mt-8"></div>
+    </div>
+
+    <footer class="border-t border-zinc-800 py-12 text-center text-zinc-500 text-sm mt-20">
+        Powered by The Zeta Foundation • © 2026 zorbs.io
+    </footer>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file');
+
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) fileInput.files = e.dataTransfer.files;
+        });
+    </script>
 </body>
 </html>
         "#))
