@@ -1,6 +1,6 @@
 use axum::{
     routing::{get, post},
-    Router, Json, extract::State,
+    Router, Json, extract::{State, Query},
     http::StatusCode,
     response::IntoResponse,
 };
@@ -10,10 +10,19 @@ use tracing_subscriber;
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use maud::{html, Markup, PreEscaped};
+use crate::models::Zorb;
+use serde::Deserialize;
+
+mod models;
 
 #[derive(Clone)]
 struct AppState {
     db: sqlx::PgPool,
+}
+
+#[derive(Deserialize)]
+struct SearchParams {
+    q: Option<String>,
 }
 
 #[tokio::main]
@@ -198,12 +207,44 @@ async fn homepage() -> Markup {
     }
 }
 
-async fn search_zorbs() -> Markup {
+async fn search_zorbs(Query(params): Query<SearchParams>, State(state): State<Arc<AppState>>) -> Markup {
+    let search_term = params.q.unwrap_or_default().trim().to_lowercase();
+
+    let zorbs: Vec<Zorb> = if search_term.is_empty() {
+        sqlx::query_as("SELECT id, name, version, description, license, repository, downloads, created_at FROM zorbs ORDER BY downloads DESC LIMIT 12")
+            .fetch_all(&state.db)
+            .await
+            .unwrap_or_default()
+    } else {
+        sqlx::query_as("SELECT id, name, version, description, license, repository, downloads, created_at FROM zorbs WHERE LOWER(name) LIKE $1 OR LOWER(description) LIKE $1 ORDER BY downloads DESC LIMIT 12")
+            .bind(format!("%{}%", search_term))
+            .fetch_all(&state.db)
+            .await
+            .unwrap_or_default()
+    };
+
     html! {
-        div class="grid grid-cols-1 md:grid-cols-3 gap-6" {
-            div class="bg-zinc-900 border border-emerald-500/30 rounded-3xl p-8 text-center" {
-                p class="text-emerald-400 font-medium" { "🔍 Live search coming soon..." }
-                p class="text-zinc-400 text-sm mt-2" { "Type in the search box above" }
+        div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" {
+            @for zorb in &zorbs {
+                div class="zorb-card bg-zinc-900 border border-zinc-800 rounded-3xl p-8" {
+                    div class="flex justify-between items-start" {
+                        div {
+                            span class="font-mono text-cyan-400" { (zorb.name) }
+                            p class="text-zinc-400 mt-2 text-sm" { (zorb.description.clone().unwrap_or_else(|| "No description".to_string())) }
+                        }
+                        span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full" { (zorb.version) }
+                    }
+                    div class="mt-8 text-xs text-zinc-500 flex gap-6" {
+                        span { "↓ " (zorb.downloads) }
+                        span { "★ " (zorb.downloads / 100) }
+                    }
+                }
+            }
+            @if zorbs.is_empty() {
+                div class="col-span-full text-center text-zinc-400 py-20" {
+                    p { "No zorbs found matching your search." }
+                    p class="text-sm mt-2" { "Try a different term or publish your first zorb!" }
+                }
             }
         }
     }
