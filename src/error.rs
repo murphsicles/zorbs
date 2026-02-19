@@ -1,3 +1,4 @@
+// src/error.rs
 use axum::response::{IntoResponse, Response};
 use axum::http::StatusCode;
 use serde_json::json;
