@@ -1,6 +1,4 @@
-# docker-compose.yml
-version: '3.8'
-
+// docker-compose.yml
 services:
   db:
     image: postgres:16
@@ -21,6 +19,9 @@ services:
       - "3000:3000"
     env_file:
       - .env
+    environment:
+      # Override DATABASE_URL inside Docker so it connects to the db container
+      DATABASE_URL: postgres://zorbs:${POSTGRES_PASSWORD}@db:5432/zorbs
     volumes:
       - ./uploads:/uploads
     depends_on:
