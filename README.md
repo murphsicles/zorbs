@@ -108,7 +108,8 @@ We’re building the best package manager in the world — and we want **you**.
 - Submit PRs
 - Star the repo
 - Publish your first zorb and tell the world
-See [CONTRIBUTING.md](CONTRIBUTING.md) and join our Discord.
+  
+See [CONTRIBUTING.md](CONTRIBUTING.md) and join us on X @zorbs_io.
 
 ## License
 MIT with ❤️ for the Zeta community.
