@@ -1,15 +1,14 @@
-// src/bin/zorb.rs
 use clap::{Parser, Subcommand};
-use std::fs;
-use std::path::Path;
-use std::env;
-use std::io::Write;
-use serde::{Deserialize, Serialize};
-use toml;
-use reqwest::multipart;
-use tar::Builder;
 use flate2::write::GzEncoder;
 use flate2::Compression;
+use reqwest::multipart;
+use serde::{Deserialize, Serialize};
+use std::env;
+use std::fs;
+use std::io::Write;
+use std::path::Path;
+use tar::Builder;
+use toml;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -35,26 +34,29 @@ enum Commands {
     Lock,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct ZorbToml {
     package: Package,
+    #[serde(default)]
     dependencies: Option<toml::Table>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct Package {
     name: String,
     version: String,
+    #[serde(default)]
     description: Option<String>,
+    #[serde(default)]
     license: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct Lockfile {
     package: Vec<LockedPackage>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct LockedPackage {
     name: String,
     version: String,
@@ -78,10 +80,10 @@ fn new_project(name: &str) {
     let dir = Path::new(name);
     if dir.exists() {
         eprintln!("Directory {} already exists", name);
-        return;
+        std::process::exit(1);
     }
 
-    fs::create_dir_all(dir.join("src")).unwrap();
+    fs::create_dir_all(dir.join("src")).expect("Failed to create directories");
 
     let zorb_toml = format!(r#"[package]
 name = "{}"
@@ -92,8 +94,12 @@ license = "MIT"
 [dependencies]
 "#, name);
 
-    fs::write(dir.join("zorb.toml"), zorb_toml).unwrap();
-    fs::write(dir.join("src/main.zeta"), "// Welcome to Zeta!\nfn main() {\n    print(\"Hello, Zeta!\\n\")\n}\n").unwrap();
+    fs::write(dir.join("zorb.toml"), zorb_toml).expect("Failed to write zorb.toml");
+    fs::write(dir.join("src/main.zeta"), r#"// Welcome to Zeta!
+fn main() {
+    print("Hello, Zeta!\n")
+}
+"#).expect("Failed to write main.zeta");
 
     println!("Created new zorb project '{}'", name);
     println!("Next: cd {} && zorb publish", name);
@@ -143,12 +149,12 @@ async fn publish() {
     let mut tar_buf = Vec::new();
     {
         let mut builder = Builder::new(&mut tar_buf);
-        let _ = builder.append_path_with_name("zorb.toml", "zorb.toml");
+        builder.append_path_with_name(current_dir.join("zorb.toml"), "zorb.toml").unwrap();
         let src_path = current_dir.join("src");
         if src_path.exists() {
-            let _ = builder.append_dir_all("src", src_path);
+            builder.append_dir_all("src", src_path).unwrap();
         }
-        let _ = builder.finish();
+        builder.finish().unwrap();
     }
 
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
@@ -164,7 +170,6 @@ async fn publish() {
     match client.post(url).multipart(form).send().await {
         Ok(resp) if resp.status().is_success() => {
             println!("Zorb published successfully!");
-            println!("Run `zorb lock` in dependent projects to update lockfiles");
         }
         Ok(resp) => {
             eprintln!("Publish failed: {}", resp.status());
@@ -204,15 +209,15 @@ async fn generate_lock() {
                         Ok(d) => d,
                         Err(_) => continue,
                     };
-                    if let (Some(name), Some(version), Some(download_url)) = (
+                    if let (Some(n), Some(v), Some(u)) = (
                         data.get("name").and_then(|v| v.as_str()),
                         data.get("version").and_then(|v| v.as_str()),
                         data.get("download_url").and_then(|v| v.as_str()),
                     ) {
                         packages.push(LockedPackage {
-                            name: name.to_string(),
-                            version: version.to_string(),
-                            download_url: download_url.to_string(),
+                            name: n.to_string(),
+                            version: v.to_string(),
+                            download_url: u.to_string(),
                         });
                     }
                 }
