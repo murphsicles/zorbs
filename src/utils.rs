@@ -1,5 +1,5 @@
 // src/utils.rs
-use std::io::{self, Cursor, Read};
+use std::io::{Cursor, Read};
 use flate2::read::GzDecoder;
 use tar::Archive;
 use toml::Value;
