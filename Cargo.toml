@@ -5,6 +5,12 @@ edition = "2024"
 authors = ["Zorbs Team <hi@zorbs.io>"]
 description = "The official registry for Zorbs by The Zeta Foundation (zorbs.io)"
 license = "MIT"
+repository = "https://github.com/murphsicles/zorbs"
+homepage = "https://zorbs.io"
+documentation = "https://zorbs.io/docs"
+readme = "README.md"
+keywords = ["zeta", "package-manager", "registry", "zorbs", "zorb"]
+categories = ["development-tools::package-managers"]
 
 [dependencies]
 axum = { version = "0.7", features = ["json", "macros", "tower", "multipart"] }
