@@ -53,7 +53,7 @@ async fn render_detail(name: String, state: Arc<AppState>) -> Markup {
         "{{latest.created_at}}",
         &latest.created_at.format("%b %d, %Y").to_string()
     );
-    page = page.replace(r#"href="#"#, &format!(r#"href="{}"#, download_url));
+    page = page.replace("href=\"#\"", &format!("href=\"{}\"", download_url));
 
     html! { (PreEscaped(page)) }
 }
