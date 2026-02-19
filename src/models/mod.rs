@@ -1,3 +1,4 @@
+// src/models/mod.rs
 pub mod zorb;
 pub mod user;
 
