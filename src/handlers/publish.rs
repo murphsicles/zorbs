@@ -8,10 +8,10 @@ use crate::state::AppState;
 use crate::models::NewZorb;
 use crate::utils;
 use crate::config;
-use crate::views::publish::PUBLISH_HTML;
+use crate::views;
 
 pub async fn publish_page() -> Markup {
-    html! { (PreEscaped(PUBLISH_HTML)) }
+    html! { (PreEscaped(views::PUBLISH_HTML)) }
 }
 
 pub async fn publish_zorb(mut multipart: Multipart, State(state): State<Arc<AppState>>) -> impl IntoResponse {
