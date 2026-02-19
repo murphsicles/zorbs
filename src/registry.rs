@@ -1,3 +1,4 @@
+// src/registry.rs
 use axum::{
     extract::{Multipart, Query, State},
     response::Html,
