@@ -1,4 +1,3 @@
-// src/main.rs
 mod config;
 mod state;
 mod error;
@@ -23,14 +22,14 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let config = Config::load();
-    let state = state::new();
+    let state = state::new(&config).await;
 
     let app = create_router(state)
         .layer(TraceLayer::new_for_http());
 
     let listener = TcpListener::bind(format!("0.0.0.0:{}", config.port))
         .await
-        .expect("Failed to bind to port 3000");
+        .expect("Failed to bind to port");
 
     println!("🚀 Zorbs registry listening on http://localhost:{}", config.port);
     axum::serve(listener, app).await.unwrap();
