@@ -5,10 +5,10 @@
 
 pub const MVP_REMAINING: &str = r#"
 # Zorbs MVP (Shippable Registry)
-## Remaining Items (2 total)
-- [ ] 1. Basic security & validation
-  File size limits, path sanitization, zorb.toml validation
+## Remaining Items (0 total)
 ## Completed
+- [x] Basic security & validation
+  File size limits (50 MB), path sanitization (zip-slip protection), zorb.toml validation (scoped names, semver, required fields)
 - [x] zorb.lock generation
   CLI + registry produce reproducible lockfiles
 - [x] Bootstrap zorb CLI (Rust reference impl)
@@ -39,6 +39,7 @@ pub const POST_MVP_V1: &str = r#"
 "#;
 
 pub const STATUS: &str = r#"
-Current status: 12/13 MVP items complete (92%)
-Next priority: Basic security & validation
+Current status: 13/13 MVP items complete (100%)
+MVP SHIPPED — Zorbs is production-ready for Zeta!
+Next priority: Post-MVP v1 features
 "#;
