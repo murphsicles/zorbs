@@ -1,17 +1,32 @@
+// docker-compose.yml
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
+  db:
+    image: postgres:16
+    restart: always
     environment:
       POSTGRES_DB: zorbs
       POSTGRES_USER: zorbs
-      POSTGRES_PASSWORD: zorbs_dev
-    ports:
-      - "5432:5432"
+      POSTGRES_PASSWORD: zorbs
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  zorbs:
+    build: .
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://zorbs:zorbs@db:5432/zorbs
+      BIND_ADDR: 0.0.0.0:3000
+      UPLOAD_DIR: /uploads
+    volumes:
+      - ./uploads:/uploads
+    depends_on:
+      - db
 
 volumes:
   postgres_data:
