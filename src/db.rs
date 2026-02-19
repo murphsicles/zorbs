@@ -8,11 +8,9 @@ pub async fn run_migrations(pool: &PgPool) {
         .expect("Failed to run database migrations");
 }
 
-// Future query helpers go here
 pub mod queries {
     use super::*;
     use crate::models::Zorb;
-    use sqlx::Row;
 
     pub async fn list_zorbs(pool: &PgPool) -> Vec<Zorb> {
         sqlx::query_as("SELECT id, name, version, description, license, repository, downloads, created_at FROM zorbs ORDER BY downloads DESC LIMIT 12")
@@ -36,5 +34,13 @@ pub mod queries {
             .fetch_all(pool)
             .await
             .unwrap_or_default()
+    }
+
+    pub async fn get_latest_zorb(pool: &PgPool, name: &str) -> Option<Zorb> {
+        sqlx::query_as("SELECT id, name, version, description, license, repository, downloads, created_at FROM zorbs WHERE name = $1 ORDER BY created_at DESC LIMIT 1")
+            .bind(name)
+            .fetch_optional(pool)
+            .await
+            .unwrap_or(None)
     }
 }
