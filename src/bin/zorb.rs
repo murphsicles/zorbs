@@ -250,7 +250,7 @@ async fn install(package: Option<String>) {
             download_single(&p.download_url, &p.name).await;
         }
     }
-
+}
 async fn download_single(url: &str, name: &str) {
     let client = reqwest::Client::new();
     match client.get(url).send().await {
