@@ -232,9 +232,15 @@ async fn generate_lock() {
 
 async fn install(package: Option<String>) {
     if let Some(pkg) = package {
-        let url = format!("http://localhost:3000/{}/0.1.0/download", pkg.replace('@', "").replace('/', "-"));
+        let url = format!("http://localhost:3000/{}/0.1.0/download", 
+            pkg.replace('@', "").replace('/', "-"));
         download_single(&url, &pkg).await;
         return;
+    }
+
+    if !Path::new("zorb.lock").exists() {
+        println!("No zorb.lock found. Generating now...");
+        generate_lock().await;
     }
 
     if Path::new("zorb.lock").exists() {
@@ -242,25 +248,6 @@ async fn install(package: Option<String>) {
         let lock: Lockfile = toml::from_str(&content).unwrap();
         for p in lock.package {
             download_single(&p.download_url, &p.name).await;
-        }
-    } else {
-        println!("No zorb.lock found. Generating now...");
-        generate_lock().await;
-        install(None).await;
-    }
-}
-
-async fn download_single(url: &str, name: &str) {
-    let client = reqwest::Client::new();
-    match client.get(url).send().await {
-        Ok(resp) if resp.status().is_success() => {
-            let bytes = resp.bytes().await.unwrap();
-            let filename = format!("{}.zorb", name.replace('/', "-"));
-            fs::write(&filename, bytes).unwrap();
-            println!("Installed {} -> {}", name, filename);
-        }
-        _ => {
-            eprintln!("Failed to download {}", name);
         }
     }
 }
