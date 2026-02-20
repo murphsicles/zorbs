@@ -24,7 +24,7 @@ dotenvy = "0.15.7"
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "tls-native-tls", "postgres", "migrate", "chrono", "uuid"] }
 chrono = { version = "0.4.43", features = ["serde"] }
 uuid = { version = "1.21.0", features = ["v4", "serde"] }
-maud = "0.27.0"
+maud = { version = "0.27.0", features = ["axum"] }
 toml = "1.0.3"
 tar = "0.4.44"
 flate2 = "1.1.9"
