@@ -14,7 +14,7 @@ pub async fn publish_page() -> Markup {
     html! { (PreEscaped(views::PUBLISH_HTML)) }
 }
 
-pub async fn publish_zorb(mut multipart: Multipart, State(state): State<Arc<AppState>>) -> impl IntoResponse {
+pub async fn publish_zorb(State(state): State<Arc<AppState>>, mut multipart: Multipart) -> impl IntoResponse {
     let mut form_name = String::new();
     let mut form_version = String::new();
     let mut form_description: Option<String> = None;
