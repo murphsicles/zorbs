@@ -250,4 +250,18 @@ async fn install(package: Option<String>) {
             download_single(&p.download_url, &p.name).await;
         }
     }
+
+async fn download_single(url: &str, name: &str) {
+    let client = reqwest::Client::new();
+    match client.get(url).send().await {
+        Ok(resp) if resp.status().is_success() => {
+            let bytes = resp.bytes().await.unwrap();
+            let filename = format!("{}.zorb", name.replace('/', "-"));
+            fs::write(&filename, bytes).unwrap();
+            println!("Installed {} -> {}", name, filename);
+        }
+        _ => {
+            eprintln!("Failed to download {}", name);
+        }
+    }
 }
