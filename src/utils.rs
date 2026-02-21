@@ -15,7 +15,13 @@ const RESERVED_SCOPES: &[&str] = &[
     "whatsapp", "telegram", "tiktok", "netflix", "disney", "spotify", "github", "gitlab",
     "bitbucket", "adobe", "uber", "airbnb", "lyft", "samsung", "sony", "grok", "bitcoin",
     "btc", "bch", "bsv", "xrp", "sol", "solana", "bags", "bagsapp", "bagged", "crypto",
-    "spacex", "nasa", "gov", "cia", "m15", "mi6", "gchq", "mod", "royal", "hrh", 
+    "spacex", "nasa", "gov", "cia", "m15", "mi6", "gchq", "mod", "royal", "hrh",
+
+    // === OFFICIAL ZETA FOUNDATION SUPER DOMAINS ===
+    // These are the curated, blessed standard library scopes
+    "core", "data", "async", "http", "web", "db", "log", "cli",
+    "crypto", "net", "math", "test", "sys", "fmt", "util",
+    "config", "time", "random",
 ];
 
 const BLOCKED_WORDS: &[&str] = &[
@@ -33,30 +39,24 @@ pub fn validate_package_name(name: &str) -> Result<(), String> {
     if name.is_empty() {
         return Err("Package name cannot be empty".to_string());
     }
-
     let lower_name = name.to_lowercase();
-
     // Hard block NSFW/profane anywhere in the name
     for word in BLOCKED_WORDS {
         if lower_name.contains(word) {
             return Err("Package name contains inappropriate content and is not allowed.".to_string());
         }
     }
-
     if name.starts_with('@') {
         let parts: Vec<&str> = name.split('/').collect();
         if parts.len() != 2 {
             return Err("Scoped name must be in format @scope/name".to_string());
         }
-
         let scope = parts[0].trim_start_matches('@').to_lowercase();
         let pkg = parts[1].to_lowercase();
-
-        // Reserved brand scopes
+        // Reserved brand scopes + official Zeta Super Domains
         if RESERVED_SCOPES.contains(&scope.as_str()) {
-            return Err(format!("The scope '@{}' is reserved. To claim it, please contact hi@zorbs.io", scope));
+            return Err(format!("The scope '@{}' is reserved by the Zeta Foundation.", scope));
         }
-
         if scope.len() < 2 {
             return Err("Scope must be at least 2 characters long".to_string());
         }
@@ -71,13 +71,11 @@ pub fn validate_package_name(name: &str) -> Result<(), String> {
         if !pkg.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') || pkg.starts_with('-') || pkg.ends_with('-') {
             return Err("Package name may only contain alphanumeric characters, -, _ and must not start or end with -".to_string());
         }
-
         // Also block reserved names for flat packages
         if RESERVED_SCOPES.contains(&pkg.as_str()) {
-            return Err(format!("The name '{}' is reserved. To claim it, please contact hi@zorbs.io", name));
+            return Err(format!("The name '{}' is reserved by the Zeta Foundation.", name));
         }
     }
-
     Ok(())
 }
 
@@ -100,64 +98,51 @@ pub fn parse_zorb_toml(file_bytes: &[u8]) -> Result<NewZorb, String> {
     if file_bytes.len() > MAX_UPLOAD_SIZE {
         return Err(format!("Upload too large. Maximum size is {} MB", MAX_UPLOAD_SIZE / 1024 / 1024));
     }
-
     let cursor = Cursor::new(file_bytes);
     let decoder = GzDecoder::new(cursor);
     let mut archive = Archive::new(decoder);
-
-    let entries = match archive.entries() {
+    let mut entries = match archive.entries() {
         Ok(e) => e,
         Err(e) => return Err(format!("Failed to read tar archive: {}", e)),
     };
-
     for entry_result in entries {
         let mut entry = match entry_result {
             Ok(e) => e,
             Err(_) => continue,
         };
-
         let path = match entry.path() {
             Ok(p) => p.to_string_lossy().into_owned(),
             Err(_) => continue,
         };
-
         if !is_safe_path(&path) {
             return Err("Path traversal attempt detected in tarball".to_string());
         }
-
         if path.ends_with("zorb.toml") || path.ends_with("Zorb.toml") {
             let mut content = String::new();
             if let Err(e) = entry.read_to_string(&mut content) {
                 return Err(format!("Failed to read zorb.toml content: {}", e));
             }
-
             let parsed: Value = match toml::from_str(&content) {
                 Ok(v) => v,
                 Err(e) => return Err(format!("Failed to parse zorb.toml: {}", e)),
             };
-
             let package = match parsed.get("package").and_then(Value::as_table) {
                 Some(p) => p,
                 None => return Err("Missing [package] section in zorb.toml".to_string()),
             };
-
             let name = match package.get("name").and_then(Value::as_str) {
                 Some(n) => n.to_string(),
                 None => return Err("Missing 'name' field in zorb.toml [package]".to_string()),
             };
-
             let version = match package.get("version").and_then(Value::as_str) {
                 Some(v) => v.to_string(),
                 None => return Err("Missing 'version' field in zorb.toml [package]".to_string()),
             };
-
             validate_package_name(&name)?;
             validate_version(&version)?;
-
             let description = package.get("description").and_then(Value::as_str).map(str::to_string);
             let license = package.get("license").and_then(Value::as_str).map(str::to_string);
             let repository = package.get("repository").and_then(Value::as_str).map(str::to_string);
-
             return Ok(NewZorb {
                 name,
                 version,
@@ -167,6 +152,5 @@ pub fn parse_zorb_toml(file_bytes: &[u8]) -> Result<NewZorb, String> {
             });
         }
     }
-
     Err("No zorb.toml found in the uploaded tarball".to_string())
 }
