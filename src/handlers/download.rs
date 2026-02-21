@@ -16,8 +16,13 @@ async fn serve_file(name: String, version: String, state: Arc<AppState>) -> impl
     if !fs::try_exists(&upload_path).await.unwrap_or(false) {
         return (StatusCode::NOT_FOUND, "Zorb not found").into_response();
     }
-    // TEMPORARY: skip query so migrations can create the table
-    let _ = ();
+        let _ = sqlx::query!(
+        "UPDATE zorbs SET downloads = downloads + 1 WHERE name = $1 AND version = $2",
+        name,
+        version
+    )
+    .execute(&state.db)
+    .await;
     match fs::read(&upload_path).await {
         Ok(bytes) => {
             let mut headers = header::HeaderMap::new();
