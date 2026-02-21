@@ -62,7 +62,7 @@ pub async fn publish_zorb(State(state): State<Arc<AppState>>, mut multipart: Mul
     fs::write(&upload_path, &file_bytes_vec).await.unwrap();
 
     let id = uuid::Uuid::new_v4();
-    let _ = sqlx::query(
+    let _ = sqlx::query!(
         "INSERT INTO zorbs (id, name, version, description, license, repository, downloads, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, 0, NOW(), NOW())
          ON CONFLICT (name, version) DO UPDATE SET 
