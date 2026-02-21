@@ -18,7 +18,7 @@ async fn serve_file(name: String, version: String, state: Arc<AppState>) -> impl
         return (StatusCode::NOT_FOUND, "Zorb not found").into_response();
     }
 
-    let _ = sqlx::query(
+    let _ = sqlx::query!(
         "UPDATE zorbs SET downloads = downloads + 1 WHERE name = $1 AND version = $2",
         name,
         version
