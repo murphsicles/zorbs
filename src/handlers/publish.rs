@@ -56,7 +56,7 @@ pub async fn publish_zorb(State(state): State<Arc<AppState>>, mut multipart: Mul
     fs::create_dir_all(&config::upload_dir()).await.unwrap();
     fs::write(&upload_path, &file_bytes_vec).await.unwrap();
     let id = uuid::Uuid::new_v4();
-    // TEMPORARY: skip DB query so migrations can create the 'zorbs' table
+    // TEMPORARY: skip query so migrations can create the 'zorbs' table
     let _ = ();
     (StatusCode::CREATED, Json(json!({
         "success": true,
