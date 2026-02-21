@@ -15,12 +15,12 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install sqlx-cli
-        run: cargo install sqlx-cli --no-default-features --features postgres,runtime-tokio-native-tls
+        run: cargo install sqlx-cli --no-default-features --features postgres,runtime-tokio,native-tls
 
       - name: Update sqlx cache (handles dirty pushes)
         run: cargo sqlx prepare --workspace
         env:
-          DATABASE_URL: "postgres://postgres:postgres@localhost:5432/postgres" # dummy URL — only for cache generation
+          DATABASE_URL: "postgres://postgres:postgres@localhost:5432/postgres" # dummy URL for cache only
 
       - name: Set SQLX_OFFLINE
         run: echo "SQLX_OFFLINE=true" >> $GITHUB_ENV
