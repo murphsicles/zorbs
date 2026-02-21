@@ -8,6 +8,23 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+
+    # Postgres service so sqlx prepare always works in CI (fixes "connection refused")
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: zorbs
+          POSTGRES_USER: zorbs
+          POSTGRES_PASSWORD: zorbs_dev
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@v4
 
@@ -15,12 +32,12 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install sqlx-cli
-        run: cargo install sqlx-cli --no-default-features --features postgres,native-tls
+        run: cargo install sqlx-cli --no-default-features --features postgres,native-tls --force
 
       - name: Update sqlx cache (handles dirty pushes)
         run: cargo sqlx prepare --workspace
         env:
-          DATABASE_URL: "postgres://postgres:postgres@localhost:5432/postgres" # dummy for cache only
+          DATABASE_URL: postgres://zorbs:zorbs_dev@localhost:5432/zorbs
 
       - name: Set SQLX_OFFLINE
         run: echo "SQLX_OFFLINE=true" >> $GITHUB_ENV
