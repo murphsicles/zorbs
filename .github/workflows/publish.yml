@@ -4,21 +4,31 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
 
-      - name: Publish to crates.io
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --no-default-features --features postgres,runtime-tokio-native-tls
+
+      - name: Update sqlx cache (handles dirty pushes)
+        run: cargo sqlx prepare --workspace
+        env:
+          DATABASE_URL: "postgres://postgres:postgres@localhost:5432/postgres" # dummy URL — only for cache generation
+
+      - name: Set SQLX_OFFLINE
+        run: echo "SQLX_OFFLINE=true" >> $GITHUB_ENV
+
+      - name: Build (release)
+        run: cargo build --release --verbose
+
+      - name: Push to crate
         run: cargo publish --verbose
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
