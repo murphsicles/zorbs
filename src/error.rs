@@ -4,6 +4,7 @@ use axum::http::StatusCode;
 use serde_json::json;
 use axum::Json;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum AppError {
     Database(sqlx::Error),
