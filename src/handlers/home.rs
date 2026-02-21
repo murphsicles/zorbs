@@ -6,7 +6,6 @@ use serde::Deserialize;
 use std::sync::Arc;
 use crate::state::AppState;
 use crate::db::queries;
-use crate::models::Zorb;
 use crate::views;
 
 #[derive(Deserialize)]
