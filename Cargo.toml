@@ -10,7 +10,7 @@ homepage = "https://zorbs.io"
 documentation = "https://zorbs.io/docs"
 readme = "README.md"
 keywords = ["zeta", "package-manager", "registry", "zorbs", "zorb"]
-categories = ["development-tools::package-managers"]
+categories = ["development-tools", "command-line-utilities"]
 
 [dependencies]
 axum = { version = "0.8.8", features = ["json", "macros", "multipart"] }
