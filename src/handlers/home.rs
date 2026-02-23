@@ -4,16 +4,19 @@ use serde_json::json;
 use maud::{html, Markup, PreEscaped};
 use serde::Deserialize;
 use std::sync::Arc;
+use axum_login::AuthSession;
 use crate::state::AppState;
 use crate::db::queries;
 use crate::views;
+use crate::models::User;
 
 #[derive(Deserialize)]
 pub struct SearchParams {
     q: Option<String>,
 }
 
-pub async fn homepage() -> Markup {
+pub async fn homepage(auth_session: AuthSession<User>) -> Markup {
+    // TODO (next step): make nav dynamic with user / logout link
     html! { (PreEscaped(views::HOME_HTML)) }
 }
 
