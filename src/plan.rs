@@ -25,6 +25,15 @@ pub const MVP_REMAINING: &str = r#"
 pub const POST_MVP_V1: &str = r#"
 # Post-MVP v1 — "Holy Shit" Release (Next 60 days)
 
+## Phase 0: Authentication & Security Foundation (CSO Priority — Block Everything Else Until Done)
+- [ ] Modern OAuth2 stack (GitHub + Google + X/Twitter)
+- [ ] Passkeys (WebAuthn 2.0) — passwordless, cross-device, biometrics
+- [ ] tower-sessions + axum-login + sqlx session store (HttpOnly, SameSite=Strict, secure cookies)
+- [ ] User model activation + owner_id on zorbs table
+- [ ] Rate limiting + brute-force protection on all auth endpoints
+- [ ] .env secrets only (never commit CLIENT_ID/SECRET)
+- [ ] Full test coverage + security audit checklist before release
+
 ## Phase 1: Official Zeta Standard Library (Highest Priority)
 - [ ] Reserve and seed all 18 Super Domains (@core, @data, @async, @http, etc.)
 - [ ] Create first 6 official Zeta packages (@data/serde, @async/tokio, @http/axum, @core/once_cell, @log/tracing, @cli/clap)
@@ -34,6 +43,7 @@ pub const POST_MVP_V1: &str = r#"
 - [ ] Trusted Publishing (GitHub OIDC)
 - [ ] Automatic security scanning + SLSA Level 3
 - [ ] Organizations & private registries
+"#;
 
 ## Phase 3: Core Engine
 - [ ] Full dependency graph + resolution engine
