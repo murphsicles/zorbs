@@ -15,10 +15,11 @@ mod utils;
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
-    let state = state::new();
+    let (state, session_layer) = state::new();
     db::run_migrations(&state.db).await;
     let app = Router::new()
         .merge(routes::routes())
+        .layer(session_layer)
         .with_state(state)
         .layer(TraceLayer::new_for_http());
     let listener = tokio::net::TcpListener::bind(config::addr())
