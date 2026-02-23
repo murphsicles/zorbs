@@ -27,13 +27,12 @@
                 <a href="#" class="hover:text-cyan-400 transition-colors">Docs</a>
                 <a href="#" class="hover:text-cyan-400 transition-colors">Blog</a>
             </div>
-            <button class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2">
+            <a href="/auth/github" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2">
                 <i class="fa-brands fa-github"></i>
                 Login with GitHub
-            </button>
+            </a>
         </div>
     </nav>
-
     <div class="pt-28 pb-20">
         <div class="max-w-screen-2xl mx-auto px-8 text-center">
             <h1 class="text-8xl font-black tracking-tighter hero-glow">ZORBS</h1>
@@ -42,12 +41,11 @@
                 The official package registry for Zeta.<br>
                 Where Rust uses crates, Zeta uses zorbs.
             </p>
-
             <div class="max-w-3xl mx-auto mt-16">
                 <div class="relative">
-                    <input 
+                    <input
                         id="search-input"
-                        type="text" 
+                        type="text"
                         placeholder="Search zorbs... (e.g. async runtime, http server, json parser)"
                         class="w-full bg-zinc-900 border border-zinc-700 focus:border-cyan-500 rounded-3xl px-8 py-7 text-lg outline-none transition-all"
                         hx-get="/api/search"
@@ -60,9 +58,7 @@
                 </div>
             </div>
         </div>
-
         <div id="search-results" class="max-w-screen-2xl mx-auto px-8 mt-12"></div>
-
         <div class="max-w-screen-2xl mx-auto px-8 mt-20">
             <h2 class="text-3xl font-semibold mb-10 flex items-center gap-3">
                 <span class="text-cyan-400">🔥</span> Trending this week
@@ -123,7 +119,6 @@
             </div>
         </div>
     </div>
-
     <footer class="border-t border-zinc-800 py-12 text-center text-zinc-500 text-sm">
         Powered by The Zeta Foundation • © 2026 zorbs.io
     </footer>
