@@ -20,3 +20,11 @@ pub fn registry_url() -> String {
     env::var("REGISTRY_URL")
         .unwrap_or_else(|_| "http://localhost:3000".to_string())
 }
+
+pub fn github_client_id() -> String {
+    env::var("GITHUB_CLIENT_ID").expect("GITHUB_CLIENT_ID must be set")
+}
+
+pub fn github_client_secret() -> String {
+    env::var("GITHUB_CLIENT_SECRET").expect("GITHUB_CLIENT_SECRET must be set")
+}
