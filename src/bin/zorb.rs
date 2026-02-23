@@ -11,6 +11,12 @@ use tar::Builder;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 
+fn registry_base() -> String {
+    let url = env::var("REGISTRY_URL")
+        .unwrap_or_else(|_| "http://localhost:3000".to_string());
+    url.trim_end_matches('/').to_string()
+}
+
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
@@ -64,7 +70,6 @@ struct LockedPackage {
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
-
     match cli.command {
         Commands::New { name } => new_project(&name),
         Commands::Add { package, version } => add_dependency(&package, version),
@@ -80,21 +85,16 @@ fn new_project(name: &str) {
         eprintln!("Directory {} already exists", name);
         return;
     }
-
     fs::create_dir_all(dir.join("src")).unwrap();
-
     let zorb_toml = format!(r#"[package]
 name = "{}"
 version = "0.1.0"
 description = "A new Zeta package"
 license = "MIT"
-
 [dependencies]
 "#, name);
-
     fs::write(dir.join("zorb.toml"), zorb_toml).unwrap();
-    fs::write(dir.join("src/main.zeta"), "// Welcome to Zeta!\nfn main() {\n    print(\"Hello, Zeta!\\n\")\n}\n").unwrap();
-
+    fs::write(dir.join("src/main.zeta"), "// Welcome to Zeta!\nfn main() {\n print(\"Hello, Zeta!\\n\")\n}\n").unwrap();
     println!("Created new zorb project '{}'", name);
     println!("Next: cd {} && zorb publish", name);
 }
@@ -108,7 +108,6 @@ fn add_dependency(package: &str, version: Option<String>) {
             return;
         }
     };
-
     let mut zorb: ZorbToml = match toml::from_str(&content) {
         Ok(v) => v,
         Err(_) => {
@@ -116,30 +115,24 @@ fn add_dependency(package: &str, version: Option<String>) {
             return;
         }
     };
-
     if zorb.dependencies.is_none() {
         zorb.dependencies = Some(toml::Table::new());
     }
-
     if let Some(deps) = &mut zorb.dependencies {
         deps.insert(package.to_string(), toml::Value::String(version.clone()));
     }
-
     let new_content = toml::to_string_pretty(&zorb).unwrap();
     fs::write("zorb.toml", new_content).unwrap();
-
     println!("Added {} = \"{}\"", package, version);
     println!("Run `zorb lock` to update zorb.lock");
 }
 
 async fn publish() {
     let current_dir = env::current_dir().unwrap();
-
     if !current_dir.join("zorb.toml").exists() {
         eprintln!("No zorb.toml found. Run `zorb new` first.");
         return;
     }
-
     let mut tar_buf = Vec::new();
     {
         let mut builder = Builder::new(&mut tar_buf);
@@ -150,17 +143,13 @@ async fn publish() {
         }
         let _ = builder.finish();
     }
-
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
     encoder.write_all(&tar_buf).unwrap();
     let compressed = encoder.finish().unwrap();
-
     let client = reqwest::Client::new();
     let form = multipart::Form::new()
         .part("file", multipart::Part::bytes(compressed).file_name("package.zorb"));
-
-    let url = "http://localhost:3000/api/zorbs/new";
-
+    let url = format!("{}/api/zorbs/new", registry_base());
     match client.post(url).multipart(form).send().await {
         Ok(resp) if resp.status().is_success() => {
             println!("Zorb published successfully!");
@@ -183,7 +172,6 @@ async fn generate_lock() {
             return;
         }
     };
-
     let zorb: ZorbToml = match toml::from_str(&content) {
         Ok(v) => v,
         Err(_) => {
@@ -191,13 +179,11 @@ async fn generate_lock() {
             return;
         }
     };
-
     let mut packages = vec![];
-
     if let Some(deps) = zorb.dependencies {
         let client = reqwest::Client::new();
         for (name, _) in deps {
-            let url = format!("http://localhost:3000/api/resolve?name={}", name);
+            let url = format!("{}/api/resolve?name={}", registry_base(), name);
             match client.get(&url).send().await {
                 Ok(resp) if resp.status().is_success() => {
                     let data: serde_json::Value = match resp.json::<serde_json::Value>().await {
@@ -222,27 +208,24 @@ async fn generate_lock() {
             }
         }
     }
-
     let lockfile = Lockfile { package: packages };
     let lock_content = toml::to_string_pretty(&lockfile).unwrap();
     fs::write("zorb.lock", lock_content).unwrap();
-
     println!("Generated zorb.lock with {} resolved packages", lockfile.package.len());
 }
 
 async fn install(package: Option<String>) {
     if let Some(pkg) = package {
-        let url = format!("http://localhost:3000/{}/0.1.0/download", 
+        let url = format!("{}/{}/0.1.0/download",
+            registry_base(),
             pkg.replace('@', "").replace('/', "-"));
         download_single(&url, &pkg).await;
         return;
     }
-
     if !Path::new("zorb.lock").exists() {
         println!("No zorb.lock found. Generating now...");
         generate_lock().await;
     }
-
     if Path::new("zorb.lock").exists() {
         let content = fs::read_to_string("zorb.lock").unwrap();
         let lock: Lockfile = toml::from_str(&content).unwrap();
@@ -251,6 +234,7 @@ async fn install(package: Option<String>) {
         }
     }
 }
+
 async fn download_single(url: &str, name: &str) {
     let client = reqwest::Client::new();
     match client.get(url).send().await {
