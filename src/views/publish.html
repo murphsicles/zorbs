@@ -26,34 +26,30 @@
                 <a href="#" class="hover:text-cyan-400 transition-colors">Docs</a>
                 <a href="#" class="hover:text-cyan-400 transition-colors">Blog</a>
             </div>
-            <button class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2">
+            <a href="/auth/github" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2">
                 <i class="fa-brands fa-github"></i>
                 Login with GitHub
-            </button>
+            </a>
         </div>
     </nav>
-
     <div class="pt-28 max-w-2xl mx-auto px-6">
         <div class="text-center mb-12">
             <h1 class="text-6xl font-black tracking-tighter">Publish a Zorb</h1>
             <p class="text-xl text-zinc-400 mt-4">Share your Zeta library with the world in seconds</p>
         </div>
-
-        <form id="publish-form" 
-              hx-post="/api/zorbs/new" 
-              hx-swap="outerHTML" 
+        <form id="publish-form"
+              hx-post="/api/zorbs/new"
+              hx-swap="outerHTML"
               class="bg-zinc-900 border border-zinc-800 rounded-3xl p-10 space-y-8">
-
             <div>
                 <label class="block text-sm font-medium text-zinc-400 mb-2">Package Name</label>
-                <input type="text" name="name" required placeholder="@myteam/my-awesome-zorb" 
+                <input type="text" name="name" required placeholder="@myteam/my-awesome-zorb"
                        class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-2xl px-6 py-4 text-lg outline-none">
             </div>
-
             <div class="grid grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-medium text-zinc-400 mb-2">Version</label>
-                    <input type="text" name="version" required placeholder="0.1.0" 
+                    <input type="text" name="version" required placeholder="0.1.0"
                            class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-2xl px-6 py-4 text-lg outline-none">
                 </div>
                 <div>
@@ -66,22 +62,19 @@
                     </select>
                 </div>
             </div>
-
             <div>
                 <label class="block text-sm font-medium text-zinc-400 mb-2">Description</label>
-                <textarea name="description" rows="4" placeholder="A blazing fast HTTP server for Zeta..." 
+                <textarea name="description" rows="4" placeholder="A blazing fast HTTP server for Zeta..."
                           class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-3xl px-6 py-4 text-lg outline-none resize-none"></textarea>
             </div>
-
             <div>
                 <label class="block text-sm font-medium text-zinc-400 mb-2">Repository URL (optional)</label>
-                <input type="text" name="repository" placeholder="https://github.com/you/my-zorb" 
+                <input type="text" name="repository" placeholder="https://github.com/you/my-zorb"
                        class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-2xl px-6 py-4 text-lg outline-none">
             </div>
-
             <div>
                 <label class="block text-sm font-medium text-zinc-400 mb-3">Zorb File (.zorb or .tar.gz)</label>
-                <div id="drop-zone" 
+                <div id="drop-zone"
                      class="drop-zone border-2 border-dashed border-zinc-700 hover:border-cyan-400 rounded-3xl p-12 text-center cursor-pointer"
                      onclick="document.getElementById('file').click()">
                     <i class="fa-solid fa-cloud-upload-alt text-6xl text-cyan-400 mb-4"></i>
@@ -90,25 +83,20 @@
                     <input type="file" id="file" name="file" accept=".zorb,.tar.gz" class="hidden">
                 </div>
             </div>
-
-            <button type="submit" 
+            <button type="submit"
                     class="w-full bg-cyan-400 hover:bg-cyan-300 text-black font-bold py-6 rounded-3xl text-xl transition-all flex items-center justify-center gap-3">
                 <i class="fa-solid fa-rocket"></i>
                 Publish to zorbs.io
             </button>
         </form>
-
         <div id="publish-result" class="mt-8"></div>
     </div>
-
     <footer class="border-t border-zinc-800 py-12 text-center text-zinc-500 text-sm mt-20">
         Powered by The Zeta Foundation • © 2026 zorbs.io
     </footer>
-
     <script>
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file');
-
         dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
         dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
         dropZone.addEventListener('drop', e => {
