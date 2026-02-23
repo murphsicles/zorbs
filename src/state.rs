@@ -4,6 +4,7 @@ use std::sync::Arc;
 use tower_sessions_sqlx_store::PostgresStore;
 use tower_sessions::SessionManagerLayer;
 use crate::config;
+use time::Duration;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -19,7 +20,7 @@ pub fn new() -> (Arc<AppState>, SessionManagerLayer<PostgresStore>) {
         .with_secure(false) // true in prod
         .with_http_only(true)
         .with_same_site(tower_sessions::cookie::SameSite::Strict)
-        .with_expiry(tower_sessions::Expiry::OnInactivity(time::Duration::minutes(30)));
+        .with_expiry(tower_sessions::Expiry::OnInactivity(Duration::minutes(30)));
 
     (Arc::new(AppState { db }), session_layer)
 }
