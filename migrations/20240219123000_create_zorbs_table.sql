@@ -13,3 +13,12 @@ CREATE TABLE IF NOT EXISTS zorbs (
 
 CREATE INDEX IF NOT EXISTS idx_zorbs_downloads ON zorbs (downloads DESC);
 CREATE INDEX IF NOT EXISTS idx_zorbs_name ON zorbs (name);
+ALTER TABLE zorbs ADD COLUMN IF NOT EXISTS owner_id UUID REFERENCES users(id);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    data JSONB NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
