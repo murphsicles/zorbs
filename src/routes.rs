@@ -3,7 +3,6 @@ use axum::Router;
 use axum::routing::{get, post};
 use std::sync::Arc;
 use crate::state::AppState;
-
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/", get(crate::handlers::home::homepage))
@@ -17,7 +16,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/api/zorbs/new", post(crate::handlers::publish::publish_zorb))
         .route("/api/search", get(crate::handlers::home::search_zorbs))
         .route("/api/resolve", get(crate::handlers::resolve::resolve_package))
-        .route("/auth/github", get(crate::auth::github_login))
-        .route("/auth/github/callback", get(crate::auth::github_callback))
-        .route("/auth/logout", get(crate::auth::logout))
+        .route("/auth/github", get(crate::handlers::auth::github_login))
+        .route("/auth/github/callback", get(crate::handlers::auth::github_callback))
+        .route("/auth/logout", get(crate::handlers::auth::logout))
 }
