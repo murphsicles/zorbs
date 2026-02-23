@@ -15,3 +15,8 @@ pub fn upload_dir() -> String {
     env::var("UPLOAD_DIR")
         .unwrap_or_else(|_| "uploads".to_string())
 }
+
+pub fn registry_url() -> String {
+    env::var("REGISTRY_URL")
+        .unwrap_or_else(|_| "http://localhost:3000".to_string())
+}
