@@ -2,7 +2,7 @@
 use axum_login::{AuthUser, AuthnBackend};
 use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 
 #[derive(Debug, Clone, FromRow)]
 pub struct User {
@@ -11,8 +11,8 @@ pub struct User {
     pub email: Option<String>,
     pub github_id: Option<i64>,
     pub avatar_url: Option<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
 }
 
 impl AuthUser for User {
