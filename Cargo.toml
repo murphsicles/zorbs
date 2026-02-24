@@ -37,6 +37,9 @@ tower-sessions = "0.14"
 tower-sessions-sqlx-store = { version = "0.14", features = ["postgres"] }
 time = { version = "0.3", features = ["serde"] }
 
+[patch.crates-io]
+tower-sessions-core = { version = "0.14" }
+
 [[bin]]
 name = "zorbs"
 path = "src/main.rs"
