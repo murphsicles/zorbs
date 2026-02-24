@@ -96,6 +96,6 @@ pub async fn github_callback(
 }
 
 pub async fn logout(mut auth_session: AuthSession<UserBackend>) -> Redirect {
-    auth_session.logout().await;
+    let _ = auth_session.logout().await;
     Redirect::to("/")
 }
