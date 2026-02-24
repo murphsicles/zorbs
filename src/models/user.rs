@@ -3,7 +3,6 @@ use axum_login::{AuthUser, AuthnBackend};
 use sqlx::FromRow;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
-use std::fmt::Debug;
 
 #[derive(Debug, Clone, FromRow)]
 pub struct User {
@@ -28,16 +27,19 @@ impl AuthUser for User {
     }
 }
 
-impl AuthnBackend for User {
-    type User = Self;
+#[derive(Clone)]
+pub struct DummyBackend;
+
+impl AuthnBackend for DummyBackend {
+    type User = User;
     type Credentials = ();
     type Error = sqlx::Error;
 
-    async fn get_user(&self, _user_id: &Self::Id) -> Result<Option<Self>, Self::Error> {
+    async fn get_user(&self, _user_id: &Uuid) -> Result<Option<User>, Self::Error> {
         Ok(None)
     }
 
-    async fn authenticate(&self, _credentials: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
+    async fn authenticate(&self, _credentials: Self::Credentials) -> Result<Option<User>, Self::Error> {
         Ok(None)
     }
 }
