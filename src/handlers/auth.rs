@@ -13,6 +13,7 @@ use oauth2::{
     TokenResponse,
     TokenUrl,
 };
+use oauth2::reqwest::async_http_client;
 use reqwest::Client as HttpClient;
 use serde::Deserialize;
 use serde_json::Value;
@@ -30,11 +31,13 @@ pub struct CallbackQuery {
 
 pub fn github_client() -> BasicClient {
     let redirect = format!("{}/auth/github/callback", config::registry_url());
-    BasicClient::new(ClientId::new(config::github_client_id()))
-        .set_client_secret(ClientSecret::new(config::github_client_secret()))
-        .set_auth_uri(AuthUrl::new("https://github.com/login/oauth/authorize".to_string()).unwrap())
-        .set_token_uri(TokenUrl::new("https://github.com/login/oauth/access_token".to_string()).unwrap())
-        .set_redirect_uri(RedirectUrl::new(redirect).unwrap())
+    BasicClient::new(
+        ClientId::new(config::github_client_id()),
+        Some(ClientSecret::new(config::github_client_secret())),
+        AuthUrl::new("https://github.com/login/oauth/authorize".to_string()).unwrap(),
+        Some(TokenUrl::new("https://github.com/login/oauth/access_token".to_string()).unwrap()),
+    )
+    .set_redirect_uri(RedirectUrl::new(redirect).unwrap())
 }
 
 pub async fn github_login() -> Redirect {
@@ -56,7 +59,7 @@ pub async fn github_callback(
 
     let token = match client
         .exchange_code(AuthorizationCode::new(query.code))
-        .request_async(oauth2::reqwest::async_http_client)
+        .request_async(async_http_client)
         .await {
         Ok(t) => t,
         Err(_) => return Redirect::to("/?error=token"),
