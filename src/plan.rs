@@ -36,10 +36,10 @@ pub const POST_MVP_V1: &str = r#"
 - [ ] Full test coverage + security audit
 
 ## Phase 1: Official Zeta Standard Library (Highest Priority)
-- [ ] Reserve and seed all 18 Super Domains (@core, @data, @async, @http, etc.)
-- [ ] Create first 6 official Zeta packages (@data/serde, @async/tokio, @http/axum, @core/once_cell, @log/tracing, @cli/clap)
+- [x] Reserve and seed all 18 Super Domains (@core, @data, @async, @http, etc.)
+- [x] Create first 6 official Zeta packages (@data/serde, @async/tokio, @http/axum, @core/once_cell, @log/tracing, @cli/clap)
 - [ ] Add "Zeta Standard Library" section to homepage with official badges
-
+  
 ## Phase 2: Trusted Publishing & Security
 - [ ] Trusted Publishing (GitHub OIDC)
 - [ ] Automatic security scanning + SLSA Level 3
