@@ -50,7 +50,7 @@ pub async fn github_callback(
     };
 
     let http = HttpClient::new();
-    let user_info: Value = match http
+    let user_info = match http
         .get("https://api.github.com/user")
         .bearer_auth(token.access_token().secret())
         .send()
