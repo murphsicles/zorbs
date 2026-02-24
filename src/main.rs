@@ -2,6 +2,11 @@
 use axum::Router;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber;
+use tower_sessions::{SessionManagerLayer, Expiry};
+use tower_sessions_sqlx_store::PostgresStore;
+use axum_login::AuthManagerLayerBuilder;
+use time::Duration;
+
 mod config;
 mod state;
 mod error;
@@ -17,10 +22,24 @@ async fn main() {
     tracing_subscriber::fmt::init();
     let state = state::new();
     db::run_migrations(&state.db).await;
+
+    // NEW: Postgres session store + migration
+    let session_store = PostgresStore::new(state.db.clone());
+    session_store.migrate().await.expect("Failed to migrate session store");
+
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_secure(false) // dev/localhost
+        .with_expiry(Expiry::OnInactivity(Duration::days(1)));
+
+    // NEW: Auth layer (uses your UserBackend from AppState)
+    let auth_layer = AuthManagerLayerBuilder::new(state.backend.clone(), session_layer).build();
+
     let app = Router::new()
         .merge(routes::routes())
+        .layer(auth_layer)  // includes session
         .with_state(state)
         .layer(TraceLayer::new_for_http());
+
     let listener = tokio::net::TcpListener::bind(config::addr())
         .await
         .expect("Failed to bind");
