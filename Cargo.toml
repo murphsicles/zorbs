@@ -35,6 +35,7 @@ oauth2 = { version = "5.0", default-features = false, features = ["reqwest"] }
 axum-login = "0.18"
 tower-sessions = "0.15"
 tower-sessions-sqlx-store = { version = "0.15", features = ["postgres"] }
+tower-sessions-core = "0.15"
 time = { version = "0.3", features = ["serde"] }
 
 [[bin]]
