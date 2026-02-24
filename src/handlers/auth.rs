@@ -7,7 +7,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::sync::Arc;
 use crate::state::AppState;
-use crate::db::queries;
+use crate::db;
 use crate::models::User;
 use crate::config;
 
@@ -18,13 +18,11 @@ pub struct CallbackQuery {
 
 pub fn github_client() -> BasicClient {
     let redirect = format!("{}/auth/github/callback", config::registry_url());
-    BasicClient::new(
-        ClientId::new(config::github_client_id()),
-        Some(ClientSecret::new(config::github_client_secret())),
-        AuthUrl::new("https://github.com/login/oauth/authorize".into()).unwrap(),
-        Some(TokenUrl::new("https://github.com/login/oauth/access_token".into()).unwrap()),
-    )
-    .set_redirect_uri(RedirectUrl::new(redirect).unwrap())
+    BasicClient::new(ClientId::new(config::github_client_id()))
+        .set_client_secret(ClientSecret::new(config::github_client_secret()))
+        .set_auth_uri(AuthUrl::new("https://github.com/login/oauth/authorize".to_string()).unwrap())
+        .set_token_uri(TokenUrl::new("https://github.com/login/oauth/access_token".to_string()).unwrap())
+        .set_redirect_uri(RedirectUrl::new(redirect).unwrap())
 }
 
 pub async fn github_login() -> Redirect {
@@ -43,7 +41,8 @@ pub async fn github_callback(
     State(state): State<Arc<AppState>>,
 ) -> Redirect {
     let client = github_client();
-    let token = match client.exchange_code(AuthorizationCode::new(query.code))
+    let token = match client
+        .exchange_code(AuthorizationCode::new(query.code))
         .request_async(oauth2::reqwest::async_http_client)
         .await {
         Ok(t) => t,
@@ -51,10 +50,15 @@ pub async fn github_callback(
     };
 
     let http = HttpClient::new();
-    let user_info: Value = match http.get("https://api.github.com/user")
+    let user_info: Value = match http
+        .get("https://api.github.com/user")
         .bearer_auth(token.access_token().secret())
-        .send().await.and_then(|r| r.json().await) {
-        Ok(u) => u,
+        .send()
+        .await {
+        Ok(r) => match r.json().await {
+            Ok(u) => u,
+            Err(_) => return Redirect::to("/?error=profile"),
+        },
         Err(_) => return Redirect::to("/?error=profile"),
     };
 
@@ -63,7 +67,7 @@ pub async fn github_callback(
     let email = user_info["email"].as_str().map(str::to_string);
     let avatar_url = user_info["avatar_url"].as_str().map(str::to_string);
 
-    let user = match queries::find_or_create_user(&state.db, github_id, &username, email, avatar_url).await {
+    let user = match db::find_or_create_user(&state.db, github_id, &username, email, avatar_url).await {
         Ok(u) => u,
         Err(_) => return Redirect::to("/?error=user"),
     };
