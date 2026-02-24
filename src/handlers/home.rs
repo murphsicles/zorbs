@@ -1,5 +1,6 @@
 // src/handlers/home.rs
 use axum::{Json, extract::{State, Query}, response::IntoResponse, http::StatusCode};
+use axum::response::Redirect;
 use serde_json::json;
 use maud::{html, Markup, PreEscaped};
 use serde::Deserialize;
