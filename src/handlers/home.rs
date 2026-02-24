@@ -1,6 +1,6 @@
 // src/handlers/home.rs
 use axum::{Json, extract::{State, Query}, response::IntoResponse, http::StatusCode};
-use axum::response::Redirect;
+use axum::response::Redirect; // ADDED (fixes seed_official)
 use serde_json::json;
 use maud::{html, Markup, PreEscaped};
 use serde::Deserialize;
@@ -9,6 +9,7 @@ use axum_login::AuthSession;
 use crate::state::AppState;
 use crate::db::queries;
 use crate::views;
+use crate::models::user::UserBackend; // CHANGED (from User)
 use crate::models::User;
 
 #[derive(Deserialize)]
@@ -16,8 +17,8 @@ pub struct SearchParams {
     q: Option<String>,
 }
 
-pub async fn homepage(auth_session: AuthSession<User>) -> Markup {
-    // TODO (next step): make nav dynamic with user / logout link
+pub async fn homepage(auth_session: AuthSession<UserBackend>) -> Markup { // CHANGED
+    // TODO (next step after this batch): dynamic nav with user.username + logout link
     html! { (PreEscaped(views::HOME_HTML)) }
 }
 
@@ -68,7 +69,6 @@ pub async fn seed_official(State(state): State<Arc<AppState>>) -> Redirect {
         ("@log/tracing", "0.2.5", "Structured, performant logging", "MIT", Some("https://github.com/zeta-lang/tracing")),
         ("@cli/clap", "4.5.0", "Command line argument parser", "MIT OR Apache-2.0", Some("https://github.com/zeta-lang/clap")),
     ];
-
     for (name, version, description, license, repository) in official {
         let _ = sqlx::query!(
             "INSERT INTO zorbs (id, name, version, description, license, repository, downloads, created_at, updated_at)
@@ -84,6 +84,5 @@ pub async fn seed_official(State(state): State<Arc<AppState>>) -> Redirect {
         .execute(&state.db)
         .await;
     }
-
     Redirect::to("/")
 }
