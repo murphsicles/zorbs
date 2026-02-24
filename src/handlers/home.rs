@@ -1,6 +1,6 @@
 // src/handlers/home.rs
 use axum::{Json, extract::{State, Query}, response::IntoResponse, http::StatusCode};
-use axum::response::Redirect; // ADDED (fixes seed_official)
+use axum::response::Redirect;
 use serde_json::json;
 use maud::{html, Markup, PreEscaped};
 use serde::Deserialize;
@@ -9,17 +9,41 @@ use axum_login::AuthSession;
 use crate::state::AppState;
 use crate::db::queries;
 use crate::views;
-use crate::models::user::UserBackend; // CHANGED (from User)
-use crate::models::User;
+use crate::models::user::UserBackend;
 
 #[derive(Deserialize)]
 pub struct SearchParams {
     q: Option<String>,
 }
 
-pub async fn homepage(auth_session: AuthSession<UserBackend>) -> Markup { // CHANGED
-    // TODO (next step after this batch): dynamic nav with user.username + logout link
-    html! { (PreEscaped(views::HOME_HTML)) }
+pub async fn homepage(auth_session: AuthSession<UserBackend>) -> Markup {
+    let user = auth_session.user();
+
+    let nav_html = if let Some(user) = user {
+        html! {
+            div class="flex items-center gap-6" {
+                span class="text-sm font-medium text-zinc-300" { "@" (user.username) }
+                a href="/auth/logout" class="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-medium rounded-2xl transition-all" {
+                    "Logout"
+                }
+            }
+        }
+    } else {
+        html! {
+            a href="/auth/github" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2" {
+                i class="fa-brands fa-github" {}
+                "Login with GitHub"
+            }
+        }
+    };
+
+    let mut html_str = views::HOME_HTML.to_string();
+    if let Some(pos) = html_str.find(r#"<a href="/auth/github" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2">"#) {
+        let end = html_str[pos..].find("</a>").map(|i| pos + i + 4).unwrap_or(html_str.len());
+        html_str.replace_range(pos..end, &nav_html.into_string());
+    }
+
+    html! { (PreEscaped(html_str)) }
 }
 
 pub async fn search_zorbs(Query(params): Query<SearchParams>, State(state): State<Arc<AppState>>) -> Markup {
