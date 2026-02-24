@@ -1,8 +1,9 @@
-// src/models.user.rs
-use axum_login::AuthUser;
+// src/models/user.rs
+use axum_login::{AuthUser, AuthnBackend};
 use sqlx::FromRow;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use std::fmt::Debug;
 
 #[derive(Debug, Clone, FromRow)]
 pub struct User {
@@ -24,5 +25,19 @@ impl AuthUser for User {
 
     fn session_auth_hash(&self) -> &[u8] {
         b""
+    }
+}
+
+impl AuthnBackend for User {
+    type User = Self;
+    type Credentials = ();
+    type Error = sqlx::Error;
+
+    async fn get_user(&self, _user_id: &Self::Id) -> Result<Option<Self>, Self::Error> {
+        Ok(None)
+    }
+
+    async fn authenticate(&self, _credentials: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
+        Ok(None)
     }
 }
