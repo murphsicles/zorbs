@@ -13,14 +13,12 @@ use oauth2::{
     TokenResponse,
     TokenUrl,
 };
-use oauth2_reqwest::ReqwestClient;
-use reqwest::Client as HttpClient;
+use reqwest::{Client as HttpClient, ClientBuilder, redirect::Policy};
 use serde::Deserialize;
 use serde_json::Value;
 use std::sync::Arc;
 use crate::state::AppState;
 use crate::db;
-use crate::models::User;
 use crate::models::user::UserBackend;
 use crate::config;
 
@@ -31,13 +29,11 @@ pub struct CallbackQuery {
 
 pub fn github_client() -> BasicClient {
     let redirect = format!("{}/auth/github/callback", config::registry_url());
-    BasicClient::new(
-        ClientId::new(config::github_client_id()),
-    )
-    .set_client_secret(ClientSecret::new(config::github_client_secret()))
-    .set_auth_uri(AuthUrl::new("https://github.com/login/oauth/authorize".to_string()).unwrap())
-    .set_token_uri(TokenUrl::new("https://github.com/login/oauth/access_token".to_string()).unwrap())
-    .set_redirect_uri(RedirectUrl::new(redirect).unwrap())
+    BasicClient::new(ClientId::new(config::github_client_id()))
+        .set_client_secret(ClientSecret::new(config::github_client_secret()))
+        .set_auth_uri(AuthUrl::new("https://github.com/login/oauth/authorize".to_string()).unwrap())
+        .set_token_uri(TokenUrl::new("https://github.com/login/oauth/access_token".to_string()).unwrap())
+        .set_redirect_uri(RedirectUrl::new(redirect).unwrap())
 }
 
 pub async fn github_login() -> Redirect {
@@ -56,8 +52,10 @@ pub async fn github_callback(
     State(state): State<Arc<AppState>>,
 ) -> Redirect {
     let client = github_client();
-    let reqwest_http = HttpClient::new();
-    let http_client = ReqwestClient::from(reqwest_http);
+    let http_client = ClientBuilder::new()
+        .redirect(Policy::none())
+        .build()
+        .expect("reqwest client");
     let token = match client
         .exchange_code(AuthorizationCode::new(query.code))
         .request_async(&http_client)
@@ -68,6 +66,7 @@ pub async fn github_callback(
     let http = HttpClient::new();
     let user_info: Value = match http
         .get("https://api.github.com/user")
+        .header("User-Agent", "zorbs-registry")
         .bearer_auth(token.access_token().secret())
         .send()
         .await {
