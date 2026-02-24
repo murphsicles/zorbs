@@ -41,7 +41,8 @@ pub async fn github_callback(
     State(state): State<Arc<AppState>>,
 ) -> Redirect {
     let client = github_client();
-    let token = match client.exchange_code(AuthorizationCode::new(query.code))
+    let token = match client
+        .exchange_code(AuthorizationCode::new(query.code))
         .request_async(oauth2::reqwest::async_http_client)
         .await {
         Ok(t) => t,
@@ -51,8 +52,8 @@ pub async fn github_callback(
     let http = HttpClient::new();
     let user_info: Value = match http.get("https://api.github.com/user")
         .bearer_auth(token.access_token().secret())
-        .send().await.and_then(|r| r.json().await) {
-        Ok(u) => u,
+        .send().await {
+        Ok(r) => r.json().await.unwrap_or_default(),
         Err(_) => return Redirect::to("/?error=profile"),
     };
 
