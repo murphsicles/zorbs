@@ -19,4 +19,5 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/auth/github", get(crate::handlers::auth::github_login))
         .route("/auth/github/callback", get(crate::handlers::auth::github_callback))
         .route("/auth/logout", get(crate::handlers::auth::logout))
+        .route("/admin/seed", get(crate::handlers::home::seed_official))
 }
