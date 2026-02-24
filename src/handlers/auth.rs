@@ -40,7 +40,7 @@ pub async fn github_login() -> Redirect {
         .add_scope(Scope::new("read:user".into()))
         .add_scope(Scope::new("user:email".into()))
         .url();
-    Redirect::temporary(auth_url.to_string())
+    Redirect::temporary(auth_url.as_str())
 }
 
 pub async fn github_callback(
