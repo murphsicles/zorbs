@@ -2,8 +2,7 @@
 use axum::Router;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber;
-use tower_sessions::{SessionManagerLayer, Expiry};
-use tower_sessions_sqlx_store::PostgresStore;
+use tower_sessions::{SessionManagerLayer, Expiry, MemoryStore};
 use axum_login::AuthManagerLayerBuilder;
 use time::Duration;
 
@@ -23,20 +22,17 @@ async fn main() {
     let state = state::new();
     db::run_migrations(&state.db).await;
 
-    // NEW: Postgres session store + migration
-    let session_store = PostgresStore::new(state.db.clone());
-    session_store.migrate().await.expect("Failed to migrate session store");
+    let session_store = MemoryStore::default();
 
     let session_layer = SessionManagerLayer::new(session_store)
         .with_secure(false) // dev/localhost
         .with_expiry(Expiry::OnInactivity(Duration::days(1)));
 
-    // NEW: Auth layer (uses your UserBackend from AppState)
     let auth_layer = AuthManagerLayerBuilder::new(state.backend.clone(), session_layer).build();
 
     let app = Router::new()
         .merge(routes::routes())
-        .layer(auth_layer)  // includes session
+        .layer(auth_layer)
         .with_state(state)
         .layer(TraceLayer::new_for_http());
 
