@@ -1,8 +1,8 @@
 // src/state.rs
 use sqlx::PgPool;
 use std::sync::Arc;
-use tower_sessions_sqlx_store::PostgresStore;
 use tower_sessions::SessionManagerLayer;
+use tower_sessions::memory_store::MemoryStore;
 use crate::config;
 use time::Duration;
 
@@ -11,11 +11,11 @@ pub struct AppState {
     pub db: PgPool,
 }
 
-pub fn new() -> (Arc<AppState>, SessionManagerLayer<PostgresStore>) {
+pub fn new() -> (Arc<AppState>, SessionManagerLayer<MemoryStore>) {
     let db = PgPool::connect_lazy(&config::database_url())
         .expect("Failed to create DB pool");
 
-    let session_store = PostgresStore::new(db.clone());
+    let session_store = MemoryStore::new();
     let session_layer = SessionManagerLayer::new(session_store)
         .with_secure(false) // true in prod
         .with_http_only(true)
