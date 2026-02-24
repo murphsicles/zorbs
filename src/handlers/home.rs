@@ -57,3 +57,32 @@ pub async fn health() -> impl IntoResponse {
 pub async fn list_zorbs(State(_state): State<Arc<AppState>>) -> impl IntoResponse {
     (StatusCode::OK, Json(json!({"zorbs": [], "total": 0})))
 }
+
+pub async fn seed_official(State(state): State<Arc<AppState>>) -> Redirect {
+    let official = vec![
+        ("@data/serde", "1.0.210", "Fast & safe serialization", "MIT OR Apache-2.0", Some("https://github.com/zeta-lang/serde")),
+        ("@async/tokio", "1.42.0", "The async runtime that powers Zeta", "MIT", Some("https://github.com/zeta-lang/tokio")),
+        ("@http/axum", "0.8.1", "Ergonomic web framework", "MIT", Some("https://github.com/zeta-lang/axum")),
+        ("@core/once_cell", "1.19.0", "Single assignment cells", "MIT OR Apache-2.0", Some("https://github.com/zeta-lang/once_cell")),
+        ("@log/tracing", "0.2.5", "Structured, performant logging", "MIT", Some("https://github.com/zeta-lang/tracing")),
+        ("@cli/clap", "4.5.0", "Command line argument parser", "MIT OR Apache-2.0", Some("https://github.com/zeta-lang/clap")),
+    ];
+
+    for (name, version, description, license, repository) in official {
+        let _ = sqlx::query!(
+            "INSERT INTO zorbs (id, name, version, description, license, repository, downloads, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, 0, NOW(), NOW())
+             ON CONFLICT (name, version) DO NOTHING",
+            uuid::Uuid::new_v4(),
+            name,
+            version,
+            Some(description),
+            Some(license),
+            repository
+        )
+        .execute(&state.db)
+        .await;
+    }
+
+    Redirect::to("/")
+}
