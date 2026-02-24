@@ -2,12 +2,13 @@
 use axum::{extract::{Query, State}, response::Redirect};
 use axum_login::AuthSession;
 use oauth2::{basic::BasicClient, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope, TokenResponse, TokenUrl};
+use oauth2::reqwest::async_http_client;
 use reqwest::Client as HttpClient;
 use serde::Deserialize;
 use serde_json::Value;
 use std::sync::Arc;
 use crate::state::AppState;
-use crate::db::queries;
+use crate::db;
 use crate::models::User;
 use crate::config;
 
@@ -43,7 +44,7 @@ pub async fn github_callback(
     let client = github_client();
     let token = match client
         .exchange_code(AuthorizationCode::new(query.code))
-        .request_async(oauth2::reqwest::async_http_client)
+        .request_async(async_http_client)
         .await {
         Ok(t) => t,
         Err(_) => return Redirect::to("/?error=token"),
@@ -52,8 +53,8 @@ pub async fn github_callback(
     let http = HttpClient::new();
     let user_info: Value = match http.get("https://api.github.com/user")
         .bearer_auth(token.access_token().secret())
-        .send().await {
-        Ok(r) => r.json().await.unwrap_or_default(),
+        .send().await.and_then(|r| r.json().await) {
+        Ok(u) => u,
         Err(_) => return Redirect::to("/?error=profile"),
     };
 
@@ -62,7 +63,7 @@ pub async fn github_callback(
     let email = user_info["email"].as_str().map(str::to_string);
     let avatar_url = user_info["avatar_url"].as_str().map(str::to_string);
 
-    let user = match queries::find_or_create_user(&state.db, github_id, &username, email, avatar_url).await {
+    let user = match db::find_or_create_user(&state.db, github_id, &username, email, avatar_url).await {
         Ok(u) => u,
         Err(_) => return Redirect::to("/?error=user"),
     };
