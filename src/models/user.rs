@@ -1,6 +1,6 @@
 // src/models/user.rs
 use axum_login::{AuthUser, AuthnBackend};
-use sqlx::FromRow;
+use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 
@@ -17,29 +17,38 @@ pub struct User {
 
 impl AuthUser for User {
     type Id = Uuid;
-
     fn id(&self) -> Self::Id {
         self.id
     }
-
     fn session_auth_hash(&self) -> &[u8] {
         b""
     }
 }
 
 #[derive(Clone)]
-pub struct DummyBackend;
+pub struct UserBackend {
+    pub pool: PgPool,
+}
 
-impl AuthnBackend for DummyBackend {
+impl UserBackend {
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+}
+
+impl AuthnBackend for UserBackend {
     type User = User;
     type Credentials = ();
     type Error = sqlx::Error;
 
-    async fn get_user(&self, _user_id: &Uuid) -> Result<Option<User>, Self::Error> {
-        Ok(None)
+    async fn get_user(&self, user_id: &Uuid) -> Result<Option<User>, Self::Error> {
+        sqlx::query_as("SELECT * FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(&self.pool)
+            .await
     }
 
     async fn authenticate(&self, _credentials: Self::Credentials) -> Result<Option<User>, Self::Error> {
-        Ok(None)
+        Ok(None) // GitHub OAuth uses manual login in callback
     }
 }
