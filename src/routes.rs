@@ -19,6 +19,10 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/api/resolve", get(crate::handlers::resolve::resolve_package))
         .route("/auth/github", get(crate::handlers::auth::github_login))
         .route("/auth/github/callback", get(crate::handlers::auth::github_callback))
+        .route("/auth/google", get(crate::handlers::auth::google_login))
+        .route("/auth/google/callback", get(crate::handlers::auth::google_callback))
+        .route("/auth/twitter", get(crate::handlers::auth::twitter_login))
+        .route("/auth/twitter/callback", get(crate::handlers::auth::twitter_callback))
         .route("/auth/logout", get(crate::handlers::auth::logout))
         .route("/admin/seed", get(crate::handlers::home::seed_official))
 }
