@@ -17,7 +17,7 @@ pub struct SearchParams {
 }
 
 pub async fn homepage(auth_session: AuthSession<UserBackend>) -> Markup {
-    let user = &auth_session.user;  // public field in axum-login 0.18
+    let user = &auth_session.user;  // FIXED: public field (not .user())
 
     let nav_html = if let Some(user) = user {
         html! {
