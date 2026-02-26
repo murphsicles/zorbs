@@ -4,7 +4,8 @@ use crate::models::User;
 
 pub async fn find_or_create_user(
     pool: &PgPool,
-    github_id: i64,
+    provider: &str,
+    provider_id: &str,
     username: &str,
     email: Option<String>,
     avatar_url: Option<String>,
@@ -12,16 +13,17 @@ pub async fn find_or_create_user(
     sqlx::query_as!(
         User,
         r#"
-        INSERT INTO users (github_id, username, email, avatar_url)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (github_id) DO UPDATE SET
+        INSERT INTO users (provider, provider_id, username, email, avatar_url)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (provider, provider_id) DO UPDATE SET
             username = EXCLUDED.username,
             email = EXCLUDED.email,
             avatar_url = EXCLUDED.avatar_url,
             updated_at = NOW()
         RETURNING *
         "#,
-        github_id,
+        provider,
+        provider_id,
         username,
         email,
         avatar_url
