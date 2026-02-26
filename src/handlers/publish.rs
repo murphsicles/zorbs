@@ -14,10 +14,9 @@ use crate::models::user::UserBackend;
 
 pub async fn publish_page(auth_session: AuthSession<UserBackend>) -> Markup {
     let mut html_str = views::PUBLISH_HTML.to_string();
-
-    // dynamic nav (exact copy from homepage)
+    // dynamic nav with modal trigger
     let user = &auth_session.user;
-    let nav_html = if let Some(user) = user {
+    let auth_html = if let Some(user) = user {
         html! {
             div class="flex items-center gap-6" {
                 span class="text-sm font-medium text-zinc-300" { "@" (user.username) }
@@ -28,17 +27,15 @@ pub async fn publish_page(auth_session: AuthSession<UserBackend>) -> Markup {
         }
     } else {
         html! {
-            a href="/auth/github" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2" {
-                i class="fa-brands fa-github" {}
-                "Login with GitHub"
+            button onclick="openLoginModal()" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2" {
+                "Sign in"
+                i class="fa-solid fa-right-to-bracket" {}
             }
         }
     };
-    if let Some(pos) = html_str.find(r#"<a href="/auth/github" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2">"#) {
-        let end = html_str[pos..].find("</a>").map(|i| pos + i + 4).unwrap_or(html_str.len());
-        html_str.replace_range(pos..end, &nav_html.into_string());
+    if let Some(pos) = html_str.find("<!-- AUTH_SLOT -->") {
+        html_str.replace_range(pos..pos + "<!-- AUTH_SLOT -->".len(), &auth_html.into_string());
     }
-
     html! { (PreEscaped(html_str)) }
 }
 
