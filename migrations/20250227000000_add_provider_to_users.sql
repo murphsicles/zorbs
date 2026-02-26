@@ -12,3 +12,6 @@ WHERE github_id IS NOT NULL AND provider_id IS NULL;
 
 -- Make github_id optional for future
 ALTER TABLE users ALTER COLUMN github_id DROP NOT NULL;
+
+-- Add unique constraint for ON CONFLICT
+ALTER TABLE users ADD CONSTRAINT users_provider_provider_id_unique UNIQUE (provider, provider_id);
