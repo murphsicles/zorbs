@@ -1,6 +1,6 @@
 [package]
 name = "zorbs"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["The Zeta Foundation"]
 description = "The official registry for Zorbs by The Zeta Foundation (zorbs.io)"
