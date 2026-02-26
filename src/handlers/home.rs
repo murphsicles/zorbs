@@ -17,9 +17,8 @@ pub struct SearchParams {
 }
 
 pub async fn homepage(auth_session: AuthSession<UserBackend>) -> Markup {
-    let user = &auth_session.user;  // FIXED: public field (not .user())
-
-    let nav_html = if let Some(user) = user {
+    let user = &auth_session.user;
+    let auth_html = if let Some(user) = user {
         html! {
             div class="flex items-center gap-6" {
                 span class="text-sm font-medium text-zinc-300" { "@" (user.username) }
@@ -30,19 +29,16 @@ pub async fn homepage(auth_session: AuthSession<UserBackend>) -> Markup {
         }
     } else {
         html! {
-            a href="/auth/github" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2" {
-                i class="fa-brands fa-github" {}
-                "Login with GitHub"
+            button onclick="openLoginModal()" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2" {
+                "Sign in"
+                i class="fa-solid fa-right-to-bracket" {}
             }
         }
     };
-
     let mut html_str = views::HOME_HTML.to_string();
-    if let Some(pos) = html_str.find(r#"<a href="/auth/github" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2">"#) {
-        let end = html_str[pos..].find("</a>").map(|i| pos + i + 4).unwrap_or(html_str.len());
-        html_str.replace_range(pos..end, &nav_html.into_string());
+    if let Some(pos) = html_str.find("<!-- AUTH_SLOT -->") {
+        html_str.replace_range(pos..pos + "<!-- AUTH_SLOT -->".len(), &auth_html.into_string());
     }
-
     html! { (PreEscaped(html_str)) }
 }
 
