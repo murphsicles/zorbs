@@ -87,7 +87,14 @@ pub async fn github_callback(
     let email = user_info["email"].as_str().map(str::to_string);
     let avatar_url = user_info["avatar_url"].as_str().map(str::to_string);
 
-    let user = match db::find_or_create_user(&state.db, github_id, &username, email, avatar_url).await {
+    let user = match db::find_or_create_user(
+        &state.db,
+        "github",
+        &github_id.to_string(),
+        &username,
+        email,
+        avatar_url
+    ).await {
         Ok(u) => u,
         Err(_) => return Redirect::to("/?error=user"),
     };
