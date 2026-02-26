@@ -1,4 +1,4 @@
-// src/handlers/authrs
+// src/handlers/auth.rs
 use axum::{extract::{Query, State}, response::Redirect};
 use axum_login::AuthSession;
 use oauth2::{
