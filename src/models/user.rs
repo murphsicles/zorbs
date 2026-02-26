@@ -10,7 +10,7 @@ pub struct User {
     pub username: String,
     pub email: Option<String>,
     pub provider: String,
-    pub provider_id: String,
+    pub provider_id: Option<String>,
     pub avatar_url: Option<String>,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
