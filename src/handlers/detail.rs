@@ -1,4 +1,3 @@
-// src/handlers/detail.rs
 use axum::extract::{State, Path};
 use axum_login::AuthSession;
 use maud::{html, Markup, PreEscaped};
@@ -55,9 +54,9 @@ async fn render_detail(auth_session: AuthSession<UserBackend>, name: String, sta
     );
     page = page.replace("href=\"#\"", &format!("href=\"{}\"", download_url));
 
-    // dynamic nav (exact copy from homepage)
+    // dynamic nav (modal trigger or logged-in state)
     let user = &auth_session.user;
-    let nav_html = if let Some(user) = user {
+    let auth_html = if let Some(user) = user {
         html! {
             div class="flex items-center gap-6" {
                 span class="text-sm font-medium text-zinc-300" { "@" (user.username) }
@@ -68,15 +67,14 @@ async fn render_detail(auth_session: AuthSession<UserBackend>, name: String, sta
         }
     } else {
         html! {
-            a href="/auth/github" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2" {
-                i class="fa-brands fa-github" {}
-                "Login with GitHub"
+            button onclick="openLoginModal()" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2" {
+                "Sign in"
+                i class="fa-solid fa-right-to-bracket" {}
             }
         }
     };
-    if let Some(pos) = page.find(r#"<a href="/auth/github" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2">"#) {
-        let end = page[pos..].find("</a>").map(|i| pos + i + 4).unwrap_or(page.len());
-        page.replace_range(pos..end, &nav_html.into_string());
+    if let Some(pos) = page.find("<!-- AUTH_SLOT -->") {
+        page.replace_range(pos..pos + "<!-- AUTH_SLOT -->".len(), &auth_html.into_string());
     }
 
     html! { (PreEscaped(page)) }
