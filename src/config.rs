@@ -28,3 +28,19 @@ pub fn github_client_id() -> String {
 pub fn github_client_secret() -> String {
     env::var("GITHUB_CLIENT_SECRET").expect("GITHUB_CLIENT_SECRET must be set")
 }
+
+pub fn google_client_id() -> String {
+    env::var("GOOGLE_CLIENT_ID").expect("GOOGLE_CLIENT_ID must be set")
+}
+
+pub fn google_client_secret() -> String {
+    env::var("GOOGLE_CLIENT_SECRET").expect("GOOGLE_CLIENT_SECRET must be set")
+}
+
+pub fn twitter_client_id() -> String {
+    env::var("TWITTER_CLIENT_ID").expect("TWITTER_CLIENT_ID must be set")
+}
+
+pub fn twitter_client_secret() -> String {
+    env::var("TWITTER_CLIENT_SECRET").expect("TWITTER_CLIENT_SECRET must be set")
+}
