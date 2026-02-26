@@ -20,7 +20,7 @@ pub async fn find_or_create_user(
             email = EXCLUDED.email,
             avatar_url = EXCLUDED.avatar_url,
             updated_at = NOW()
-        RETURNING *
+        RETURNING id, username, email, provider, provider_id, avatar_url, created_at, updated_at
         "#,
         provider,
         provider_id,
