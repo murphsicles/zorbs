@@ -23,10 +23,7 @@
                 <a href="#" class="hover:text-cyan-400 transition-colors">Docs</a>
                 <a href="#" class="hover:text-cyan-400 transition-colors">Blog</a>
             </div>
-            <a href="/auth/github" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2">
-                <i class="fa-brands fa-github"></i>
-                Login with GitHub
-            </a>
+            <!-- AUTH_SLOT -->
         </div>
     </nav>
     <div class="pt-28 max-w-5xl mx-auto px-8">
@@ -138,5 +135,42 @@
     <footer class="border-t border-zinc-800 py-12 text-center text-zinc-500 text-sm mt-20">
         Powered by The Zeta Foundation • © 2026 zorbs.io
     </footer>
+
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[100]">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-8 max-w-sm w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-semibold tracking-tight">Sign in to zorbs</h3>
+                <button onclick="closeModal()" class="text-zinc-400 hover:text-white text-2xl leading-none">×</button>
+            </div>
+            <div class="space-y-3">
+                <a href="/auth/github" onclick="closeModal()" class="flex items-center justify-center gap-3 px-6 py-4 bg-white text-black rounded-2xl hover:bg-cyan-400 hover:text-black transition-all font-medium">
+                    <i class="fa-brands fa-github text-xl"></i>
+                    Continue with GitHub
+                </a>
+                <a href="/auth/google" onclick="closeModal()" class="flex items-center justify-center gap-3 px-6 py-4 bg-white text-black rounded-2xl hover:bg-cyan-400 hover:text-black transition-all font-medium">
+                    <i class="fa-brands fa-google text-xl"></i>
+                    Continue with Google
+                </a>
+                <a href="/auth/twitter" onclick="closeModal()" class="flex items-center justify-center gap-3 px-6 py-4 bg-white text-black rounded-2xl hover:bg-cyan-400 hover:text-black transition-all font-medium">
+                    <i class="fa-brands fa-x-twitter text-xl"></i>
+                    Continue with X
+                </a>
+            </div>
+            <p class="text-center text-xs text-zinc-500 mt-8">Secure • No password required</p>
+        </div>
+    </div>
+
+    <script>
+        function openLoginModal() {
+            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('login-modal').classList.add('flex');
+        }
+        function closeModal() {
+            const modal = document.getElementById('login-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    </script>
 </body>
 </html>
