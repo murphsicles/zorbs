@@ -9,7 +9,8 @@ pub struct User {
     pub id: Uuid,
     pub username: String,
     pub email: Option<String>,
-    pub github_id: Option<i64>,
+    pub provider: String,
+    pub provider_id: String,
     pub avatar_url: Option<String>,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -49,6 +50,6 @@ impl AuthnBackend for UserBackend {
     }
 
     async fn authenticate(&self, _credentials: Self::Credentials) -> Result<Option<User>, Self::Error> {
-        Ok(None) // GitHub OAuth uses manual login in callback
+        Ok(None)
     }
 }
