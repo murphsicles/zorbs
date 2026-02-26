@@ -1,4 +1,4 @@
-// src/models/user.rs
+// src/models.user.rs
 use axum_login::{AuthUser, AuthnBackend};
 use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
