@@ -25,6 +25,7 @@ use webauthn_rs::prelude::*;
 use uuid::Uuid;
 use base64::{Engine, engine::general_purpose::STANDARD_NO_PAD};
 use bincode;
+use serde_cbor_2;
 
 #[derive(Deserialize)]
 pub struct CallbackQuery {
