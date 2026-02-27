@@ -175,6 +175,27 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
         }
+        async function startPasskeyRegister() {
+            closeModal();
+            const username = prompt("Username for new Passkey:");
+            if (!username) return;
+            const res = await fetch('/auth/passkey/register/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            if (!res.ok) return alert("Register start failed");
+            const {public_key_credential_creation_options: pkco} = await res.json();
+            try {
+                const cred = await navigator.credentials.create({ publicKey: pkco });
+                const f = await fetch('/auth/passkey/register/finish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, response: cred })
+                });
+                if (f.ok) location.reload(); else alert("Register finish failed");
+            } catch (e) { alert("Passkey creation failed: " + e.message); }
+        }
         async function startPasskeyLogin() {
             closeModal();
             const username = prompt("Enter your username for Passkey login:");
@@ -184,8 +205,17 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username })
             });
-            if (!res.ok) return alert("Passkey start failed");
-            alert("Passkey login started (full WebAuthn flow next)");
+            if (!res.ok) return alert("Login start failed");
+            const {public_key_credential_request_options: pkro} = await res.json();
+            try {
+                const cred = await navigator.credentials.get({ publicKey: pkro });
+                const f = await fetch('/auth/passkey/login/finish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ response: cred })
+                });
+                if (f.ok) location.reload(); else alert("Login finish failed");
+            } catch (e) { alert("Passkey authentication failed: " + e.message); }
         }
     </script>
 </body>
