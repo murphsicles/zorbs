@@ -24,6 +24,7 @@ use crate::config;
 use webauthn_rs::prelude::*;
 use uuid::Uuid;
 use base64::{Engine, engine::general_purpose::STANDARD_NO_PAD};
+use serde_cbor_2;
 
 #[derive(Deserialize)]
 pub struct CallbackQuery {
@@ -253,17 +254,18 @@ pub async fn passkey_register_finish(
         Ok(r) => r,
         Err(_) => return Redirect::to("/?error=reg_finish"),
     };
-    let cred_id_str = STANDARD_NO_PAD.encode(reg.cred_id().bytes());
+    let cred_id_str = STANDARD_NO_PAD.encode(reg.cred_id().as_ref());
     let user = match db::find_or_create_user(&state.db, "passkey", &cred_id_str, &payload.username, None, None).await {
         Ok(u) => u,
         Err(_) => return Redirect::to("/?error=user"),
     };
+    let public_key_bytes = serde_cbor_2::to_vec(reg.get_public_key()).unwrap();
     let _ = sqlx::query!(
         "INSERT INTO webauthn_credentials (user_id, credential_id, public_key, counter)
          VALUES ($1, $2, $3, $4)",
         user.id,
         cred_id_str,
-        reg.get_public_key().to_vec(),
+        public_key_bytes,
         0i64
     ).execute(&state.db).await;
     let _ = auth_session.login(&user).await;
@@ -282,15 +284,8 @@ pub async fn passkey_login_start(
     State(state): State<Arc<AppState>>,
     mut auth_session: AuthSession<UserBackend>,
 ) -> Json<PasskeyLoginStartResponse> {
-    let creds_str: Vec<String> = sqlx::query_scalar!(
-        "SELECT credential_id FROM webauthn_credentials wc JOIN users u ON wc.user_id = u.id WHERE u.username = $1",
-        payload.username
-    ).fetch_all(&state.db).await.unwrap_or_default();
-    let creds: Vec<CredentialID> = creds_str.into_iter().filter_map(|s| {
-        STANDARD_NO_PAD.decode(s).ok().map(CredentialID::from)
-    }).collect();
     let (rcr, skr) = state.webauthn
-        .start_passkey_authentication(&creds)
+        .start_passkey_authentication(&[])
         .expect("Failed to start login");
     let skr_json = serde_json::to_string(&skr).unwrap();
     let _ = auth_session.session.insert("webauthn_login_state", skr_json).await;
@@ -312,7 +307,7 @@ pub async fn passkey_login_finish(
         Ok(r) => r,
         Err(_) => return Redirect::to("/?error=login_finish"),
     };
-    let cred_id_str = STANDARD_NO_PAD.encode(auth_result.cred_id().bytes());
+    let cred_id_str = STANDARD_NO_PAD.encode(auth_result.cred_id().as_ref());
     let user: Option<User> = sqlx::query_as!(
         User,
         "SELECT id, username, email, provider, provider_id, avatar_url, created_at, updated_at FROM users WHERE id = (SELECT user_id FROM webauthn_credentials WHERE credential_id = $1)",
