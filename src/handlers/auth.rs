@@ -249,7 +249,7 @@ pub async fn passkey_register_finish(
 ) -> Redirect {
     let skr_json: Option<String> = auth_session.session.get("webauthn_reg_state").await.unwrap_or(None);
     let skr: PasskeyRegistration = serde_json::from_str(&skr_json.unwrap_or_default()).unwrap_or_else(|_| panic!("reg_state"));
-    let _ = auth_session.session.remove("webauthn_reg_state").await;
+    let _ = auth_session.session.remove::<String>("webauthn_reg_state").await;
     let reg = match state.webauthn.finish_passkey_registration(&payload.response, &skr) {
         Ok(r) => r,
         Err(_) => return Redirect::to("/?error=reg_finish"),
@@ -280,7 +280,7 @@ pub struct PasskeyLoginStartResponse {
     pub public_key_credential_request_options: RequestChallengeResponse,
 }
 pub async fn passkey_login_start(
-    Json(payload): Json<PasskeyLoginStart>,
+    Json(_payload): Json<PasskeyLoginStart>,
     State(state): State<Arc<AppState>>,
     mut auth_session: AuthSession<UserBackend>,
 ) -> Json<PasskeyLoginStartResponse> {
@@ -302,7 +302,7 @@ pub async fn passkey_login_finish(
 ) -> Redirect {
     let skr_json: Option<String> = auth_session.session.get("webauthn_login_state").await.unwrap_or(None);
     let skr: PasskeyAuthentication = serde_json::from_str(&skr_json.unwrap_or_default()).unwrap_or_else(|_| panic!("login_state"));
-    let _ = auth_session.session.remove("webauthn_login_state").await;
+    let _ = auth_session.session.remove::<String>("webauthn_login_state").await;
     let auth_result = match state.webauthn.finish_passkey_authentication(&payload.response, &skr) {
         Ok(r) => r,
         Err(_) => return Redirect::to("/?error=login_finish"),
