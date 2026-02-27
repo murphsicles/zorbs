@@ -38,7 +38,6 @@ tower-sessions-sqlx-store = { version = "0.14", features = ["postgres"] }
 time = { version = "0.3", features = ["serde"] }
 webauthn-rs = "0.5.4"
 url = "2.5"
-openssl-sys = { version = "0.9", features = ["vendored"] }
 
 [[bin]]
 name = "zorbs"
