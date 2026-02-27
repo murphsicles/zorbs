@@ -1,4 +1,4 @@
-// src/models.user.rs
+// src/models/user.rs
 use axum_login::{AuthUser, AuthnBackend};
 use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
@@ -24,6 +24,16 @@ impl AuthUser for User {
     fn session_auth_hash(&self) -> &[u8] {
         b""
     }
+}
+
+#[derive(Debug, Clone, FromRow)]
+pub struct WebAuthnCredential {
+    pub id: i32,
+    pub user_id: Uuid,
+    pub credential_id: String,
+    pub public_key: Vec<u8>,
+    pub counter: i64,
+    pub registered_at: OffsetDateTime,
 }
 
 #[derive(Clone)]
