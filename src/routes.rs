@@ -3,6 +3,7 @@ use axum::Router;
 use axum::routing::{get, post};
 use std::sync::Arc;
 use crate::state::AppState;
+
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/", get(crate::handlers::home::homepage))
@@ -24,9 +25,4 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/auth/twitter/callback", get(crate::handlers::auth::twitter_callback))
         .route("/auth/logout", get(crate::handlers::auth::logout))
         .route("/admin/seed", get(crate::handlers::home::seed_official))
-        // Passkeys
-        .route("/auth/passkey/register/start", post(crate::handlers::auth::passkey_register_start))
-        .route("/auth/passkey/register/finish", post(crate::handlers::auth::passkey_register_finish))
-        .route("/auth/passkey/login/start", post(crate::handlers::auth::passkey_login_start))
-        .route("/auth/passkey/login/finish", post(crate::handlers::auth::passkey_login_finish))
 }
