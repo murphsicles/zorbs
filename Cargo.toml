@@ -38,7 +38,9 @@ time = { version = "0.3", features = ["serde"] }
 webauthn-rs = "0.5.4"
 url = "2.5"
 base64 = "0.22"
+bincode = "1.3"
 serde_cbor_2 = "0.11"
+
 [[bin]]
 name = "zorbs"
 path = "src/main.rs"
