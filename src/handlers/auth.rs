@@ -24,8 +24,6 @@ use crate::config;
 use webauthn_rs::prelude::*;
 use uuid::Uuid;
 use base64::{Engine, engine::general_purpose::STANDARD_NO_PAD};
-use bincode;
-use serde_cbor_2;
 
 #[derive(Deserialize)]
 pub struct CallbackQuery {
@@ -234,8 +232,8 @@ pub async fn passkey_register_start(
     let (ccr, skr) = state.webauthn
         .start_passkey_registration(user_id, &payload.username, &payload.username, None)
         .expect("Failed to start registration");
-    let skr_bytes = bincode::serialize(&skr).unwrap();
-    let _ = auth_session.session.insert("webauthn_reg_state", skr_bytes).await;
+    let skr_json = serde_json::to_string(&skr).unwrap();
+    let _ = auth_session.session.insert("webauthn_reg_state", skr_json).await;
     Json(PasskeyRegisterStartResponse { public_key_credential_creation_options: ccr })
 }
 #[derive(Deserialize)]
@@ -248,14 +246,14 @@ pub async fn passkey_register_finish(
     State(state): State<Arc<AppState>>,
     mut auth_session: AuthSession<UserBackend>,
 ) -> Redirect {
-    let skr_bytes: Option<Vec<u8>> = auth_session.session.get("webauthn_reg_state").await.unwrap_or(None);
-    let skr: PasskeyRegistration = bincode::deserialize(&skr_bytes.unwrap_or_default()).unwrap_or_else(|_| panic!("reg_state"));
+    let skr_json: Option<String> = auth_session.session.get("webauthn_reg_state").await.unwrap_or(None);
+    let skr: PasskeyRegistration = serde_json::from_str(&skr_json.unwrap_or_default()).unwrap_or_else(|_| panic!("reg_state"));
     let _ = auth_session.session.remove("webauthn_reg_state").await;
     let reg = match state.webauthn.finish_passkey_registration(&payload.response, &skr) {
         Ok(r) => r,
         Err(_) => return Redirect::to("/?error=reg_finish"),
     };
-    let cred_id_str = STANDARD_NO_PAD.encode(reg.cred_id().as_bytes());
+    let cred_id_str = STANDARD_NO_PAD.encode(reg.cred_id().as_ref());
     let user = match db::find_or_create_user(&state.db, "passkey", &cred_id_str, &payload.username, None, None).await {
         Ok(u) => u,
         Err(_) => return Redirect::to("/?error=user"),
@@ -290,13 +288,13 @@ pub async fn passkey_login_start(
         payload.username
     ).fetch_all(&state.db).await.unwrap_or_default();
     let creds: Vec<CredentialID> = creds_str.into_iter().filter_map(|s| {
-        STANDARD_NO_PAD.decode(s).ok().map(|b| HumanBinaryData(b))
+        STANDARD_NO_PAD.decode(s).ok().map(CredentialID::from)
     }).collect();
     let (rcr, skr) = state.webauthn
         .start_passkey_authentication(&creds)
         .expect("Failed to start login");
-    let skr_bytes = bincode::serialize(&skr).unwrap();
-    let _ = auth_session.session.insert("webauthn_login_state", skr_bytes).await;
+    let skr_json = serde_json::to_string(&skr).unwrap();
+    let _ = auth_session.session.insert("webauthn_login_state", skr_json).await;
     Json(PasskeyLoginStartResponse { public_key_credential_request_options: rcr })
 }
 #[derive(Deserialize)]
@@ -308,17 +306,17 @@ pub async fn passkey_login_finish(
     State(state): State<Arc<AppState>>,
     mut auth_session: AuthSession<UserBackend>,
 ) -> Redirect {
-    let skr_bytes: Option<Vec<u8>> = auth_session.session.get("webauthn_login_state").await.unwrap_or(None);
-    let skr: PasskeyAuthentication = bincode::deserialize(&skr_bytes.unwrap_or_default()).unwrap_or_else(|_| panic!("login_state"));
+    let skr_json: Option<String> = auth_session.session.get("webauthn_login_state").await.unwrap_or(None);
+    let skr: PasskeyAuthentication = serde_json::from_str(&skr_json.unwrap_or_default()).unwrap_or_else(|_| panic!("login_state"));
     let _ = auth_session.session.remove("webauthn_login_state").await;
     let auth_result = match state.webauthn.finish_passkey_authentication(&payload.response, &skr) {
         Ok(r) => r,
         Err(_) => return Redirect::to("/?error=login_finish"),
     };
-    let cred_id_str = STANDARD_NO_PAD.encode(auth_result.cred_id().as_bytes());
+    let cred_id_str = STANDARD_NO_PAD.encode(auth_result.cred_id().as_ref());
     let user: Option<User> = sqlx::query_as!(
         User,
-        "SELECT * FROM users WHERE id = (SELECT user_id FROM webauthn_credentials WHERE credential_id = $1)",
+        "SELECT id, username, email, provider, provider_id, avatar_url, created_at, updated_at FROM users WHERE id = (SELECT user_id FROM webauthn_credentials WHERE credential_id = $1)",
         cred_id_str
     ).fetch_optional(&state.db).await.unwrap_or(None);
     let user = match user {
