@@ -21,7 +21,7 @@ tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 dotenvy = "0.15.7"
-sqlx = { version = "0.8.6", features = ["runtime-tokio", "tls-native-tls", "postgres", "migrate", "chrono", "uuid"] }
+sqlx = { version = "0.8.6", features = ["runtime-tokio", "tls-rustls", "postgres", "migrate", "chrono", "uuid"] }
 chrono = { version = "0.4.43", features = ["serde"] }
 uuid = { version = "1.21.0", features = ["v4", "serde"] }
 maud = { version = "0.27.0", features = ["axum"] }
@@ -30,7 +30,7 @@ tar = "0.4.44"
 flate2 = "1.1.9"
 semver = "1.0.27"
 clap = { version = "4.5.59", features = ["derive"] }
-reqwest = { version = "0.12", features = ["multipart", "json"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "multipart", "json"] }
 oauth2 = { version = "5.0", default-features = false, features = ["reqwest"] }
 axum-login = "0.18"
 tower-sessions = "0.14"
