@@ -23,12 +23,13 @@ use crate::models::user::{User, UserBackend};
 use crate::config;
 use webauthn_rs::prelude::*;
 use uuid::Uuid;
+use base64::{Engine, engine::general_purpose::STANDARD_NO_PAD};
+use serde_json;
 
 #[derive(Deserialize)]
 pub struct CallbackQuery {
     code: String,
 }
-
 // === OAuth handlers ===
 pub async fn github_login() -> Redirect {
     let redirect = format!("{}/auth/github/callback", config::registry_url());
@@ -44,7 +45,6 @@ pub async fn github_login() -> Redirect {
         .url();
     Redirect::temporary(auth_url.as_str())
 }
-
 pub async fn github_callback(
     Query(query): Query<CallbackQuery>,
     mut auth_session: AuthSession<UserBackend>,
@@ -91,7 +91,6 @@ pub async fn github_callback(
     let _ = auth_session.login(&user).await;
     Redirect::to("/")
 }
-
 pub async fn google_login() -> Redirect {
     let redirect = format!("{}/auth/google/callback", config::registry_url());
     let client = BasicClient::new(ClientId::new(config::google_client_id()))
@@ -106,7 +105,6 @@ pub async fn google_login() -> Redirect {
         .url();
     Redirect::temporary(auth_url.as_str())
 }
-
 pub async fn google_callback(
     Query(query): Query<CallbackQuery>,
     mut auth_session: AuthSession<UserBackend>,
@@ -153,7 +151,6 @@ pub async fn google_callback(
     let _ = auth_session.login(&user).await;
     Redirect::to("/")
 }
-
 pub async fn twitter_login() -> Redirect {
     let redirect = format!("{}/auth/twitter/callback", config::registry_url());
     let client = BasicClient::new(ClientId::new(config::twitter_client_id()))
@@ -168,7 +165,6 @@ pub async fn twitter_login() -> Redirect {
         .url();
     Redirect::temporary(auth_url.as_str())
 }
-
 pub async fn twitter_callback(
     Query(query): Query<CallbackQuery>,
     mut auth_session: AuthSession<UserBackend>,
@@ -215,23 +211,19 @@ pub async fn twitter_callback(
     let _ = auth_session.login(&user).await;
     Redirect::to("/")
 }
-
 pub async fn logout(mut auth_session: AuthSession<UserBackend>) -> Redirect {
     let _ = auth_session.logout().await;
     Redirect::to("/")
 }
-
 // === Passkey handlers ===
 #[derive(Deserialize)]
 pub struct PasskeyRegisterStart {
     username: String,
 }
-
 #[derive(Serialize)]
 pub struct PasskeyRegisterStartResponse {
     pub public_key_credential_creation_options: CreationChallengeResponse,
 }
-
 pub async fn passkey_register_start(
     Json(payload): Json<PasskeyRegisterStart>,
     State(state): State<Arc<AppState>>,
@@ -241,31 +233,29 @@ pub async fn passkey_register_start(
     let (ccr, skr) = state.webauthn
         .start_passkey_registration(user_id, &payload.username, &payload.username, None)
         .expect("Failed to start registration");
-    let _ = auth_session.session.insert("webauthn_reg_state", skr).await;
+    let skr_json = serde_json::to_string(&skr).unwrap();
+    let _ = auth_session.session.insert("webauthn_reg_state", skr_json).await;
     Json(PasskeyRegisterStartResponse { public_key_credential_creation_options: ccr })
 }
-
 #[derive(Deserialize)]
 pub struct PasskeyRegisterFinish {
     username: String,
     response: RegisterPublicKeyCredential,
 }
-
 pub async fn passkey_register_finish(
     Json(payload): Json<PasskeyRegisterFinish>,
     State(state): State<Arc<AppState>>,
     mut auth_session: AuthSession<UserBackend>,
 ) -> Redirect {
-    let skr: PasskeyRegistration = match auth_session.session.get("webauthn_reg_state").await {
-        Ok(Some(s)) => s,
-        _ => return Redirect::to("/?error=reg_state"),
-    };
+    let skr_json: Option<String> = auth_session.session.get("webauthn_reg_state").await.unwrap_or(None);
+    let skr: PasskeyRegistration = serde_json::from_str(&skr_json.unwrap_or_default()).unwrap_or_else(|_| panic!("reg_state"));
     let _ = auth_session.session.remove("webauthn_reg_state").await;
     let reg = match state.webauthn.finish_passkey_registration(&payload.response, &skr) {
         Ok(r) => r,
         Err(_) => return Redirect::to("/?error=reg_finish"),
     };
-    let user = match db::find_or_create_user(&state.db, "passkey", &reg.cred_id().to_string(), &payload.username, None, None).await {
+    let cred_id_str = STANDARD_NO_PAD.encode(reg.cred_id().0.as_slice());
+    let user = match db::find_or_create_user(&state.db, "passkey", &cred_id_str, &payload.username, None, None).await {
         Ok(u) => u,
         Err(_) => return Redirect::to("/?error=user"),
     };
@@ -273,63 +263,61 @@ pub async fn passkey_register_finish(
         "INSERT INTO webauthn_credentials (user_id, credential_id, public_key, counter)
          VALUES ($1, $2, $3, $4)",
         user.id,
-        reg.cred_id().to_string(),
-        reg.public_key(),
+        cred_id_str,
+        reg.get_public_key(),
         0i64
     ).execute(&state.db).await;
     let _ = auth_session.login(&user).await;
     Redirect::to("/")
 }
-
 #[derive(Deserialize)]
 pub struct PasskeyLoginStart {
     username: String,
 }
-
 #[derive(Serialize)]
 pub struct PasskeyLoginStartResponse {
     pub public_key_credential_request_options: RequestChallengeResponse,
 }
-
 pub async fn passkey_login_start(
     Json(payload): Json<PasskeyLoginStart>,
     State(state): State<Arc<AppState>>,
     mut auth_session: AuthSession<UserBackend>,
 ) -> Json<PasskeyLoginStartResponse> {
-    let creds: Vec<String> = sqlx::query_scalar!(
+    let creds_str: Vec<String> = sqlx::query_scalar!(
         "SELECT credential_id FROM webauthn_credentials wc JOIN users u ON wc.user_id = u.id WHERE u.username = $1",
         payload.username
     ).fetch_all(&state.db).await.unwrap_or_default();
+    let creds: Vec<CredentialID> = creds_str.into_iter().filter_map(|s| {
+        STANDARD_NO_PAD.decode(s).ok().map(HumanBinaryData)
+    }).collect();
     let (rcr, skr) = state.webauthn
         .start_passkey_authentication(creds)
         .expect("Failed to start login");
-    let _ = auth_session.session.insert("webauthn_login_state", skr).await;
+    let skr_json = serde_json::to_string(&skr).unwrap();
+    let _ = auth_session.session.insert("webauthn_login_state", skr_json).await;
     Json(PasskeyLoginStartResponse { public_key_credential_request_options: rcr })
 }
-
 #[derive(Deserialize)]
 pub struct PasskeyLoginFinish {
     response: PublicKeyCredential,
 }
-
 pub async fn passkey_login_finish(
     Json(payload): Json<PasskeyLoginFinish>,
     State(state): State<Arc<AppState>>,
     mut auth_session: AuthSession<UserBackend>,
 ) -> Redirect {
-    let skr: PasskeyAuthentication = match auth_session.session.get("webauthn_login_state").await {
-        Ok(Some(s)) => s,
-        _ => return Redirect::to("/?error=login_state"),
-    };
+    let skr_json: Option<String> = auth_session.session.get("webauthn_login_state").await.unwrap_or(None);
+    let skr: PasskeyAuthentication = serde_json::from_str(&skr_json.unwrap_or_default()).unwrap_or_else(|_| panic!("login_state"));
     let _ = auth_session.session.remove("webauthn_login_state").await;
     let auth_result = match state.webauthn.finish_passkey_authentication(&payload.response, &skr) {
         Ok(r) => r,
         Err(_) => return Redirect::to("/?error=login_finish"),
     };
+    let cred_id_str = STANDARD_NO_PAD.encode(auth_result.cred_id().0.as_slice());
     let user: Option<User> = sqlx::query_as!(
         User,
         "SELECT * FROM users WHERE id = (SELECT user_id FROM webauthn_credentials WHERE credential_id = $1)",
-        auth_result.cred_id().to_string()
+        cred_id_str
     ).fetch_optional(&state.db).await.unwrap_or(None);
     let user = match user {
         Some(u) => u,
