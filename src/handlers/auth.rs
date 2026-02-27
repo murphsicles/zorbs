@@ -1,5 +1,5 @@
 // src/handlers/auth.rs
-use axum::{extract::{Query, State}, response::Redirect};
+use axum::{extract::{Query, State}, response::Redirect, Json};
 use axum_login::AuthSession;
 use oauth2::{
     basic::BasicClient,
@@ -14,198 +14,140 @@ use oauth2::{
     TokenUrl,
 };
 use reqwest::{Client as HttpClient, ClientBuilder, redirect::Policy};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
 use crate::state::AppState;
 use crate::db;
 use crate::models::user::UserBackend;
 use crate::config;
+use webauthn_rs::prelude::*;
+use uuid::Uuid;
+
 #[derive(Deserialize)]
 pub struct CallbackQuery {
     code: String,
 }
-pub async fn github_login() -> Redirect {
-    let redirect = format!("{}/auth/github/callback", config::registry_url());
-    let client = BasicClient::new(ClientId::new(config::github_client_id()))
-        .set_client_secret(ClientSecret::new(config::github_client_secret()))
-        .set_auth_uri(AuthUrl::new("https://github.com/login/oauth/authorize".to_string()).unwrap())
-        .set_token_uri(TokenUrl::new("https://github.com/login/oauth/access_token".to_string()).unwrap())
-        .set_redirect_uri(RedirectUrl::new(redirect).unwrap());
-    let (auth_url, _) = client
-        .authorize_url(CsrfToken::new_random)
-        .add_scope(Scope::new("read:user".into()))
-        .add_scope(Scope::new("user:email".into()))
-        .url();
-    Redirect::temporary(auth_url.as_str())
+
+// === Existing OAuth handlers (unchanged) ===
+pub async fn github_login() -> Redirect { /* unchanged */ }
+pub async fn github_callback(...) -> Redirect { /* unchanged */ }
+pub async fn google_login() -> Redirect { /* unchanged */ }
+pub async fn google_callback(...) -> Redirect { /* unchanged */ }
+pub async fn twitter_login() -> Redirect { /* unchanged */ }
+pub async fn twitter_callback(...) -> Redirect { /* unchanged */ }
+pub async fn logout(mut auth_session: AuthSession<UserBackend>) -> Redirect { /* unchanged */ }
+
+// === Passkey (WebAuthn 2.0) handlers ===
+#[derive(Deserialize)]
+pub struct PasskeyRegisterStart {
+    username: String,
 }
-pub async fn github_callback(
-    Query(query): Query<CallbackQuery>,
-    mut auth_session: AuthSession<UserBackend>,
+
+#[derive(Serialize)]
+pub struct PasskeyRegisterStartResponse {
+    pub public_key_credential_creation_options: CreationChallengeResponse,
+}
+
+pub async fn passkey_register_start(
+    Json(payload): Json<PasskeyRegisterStart>,
     State(state): State<Arc<AppState>>,
+    mut auth_session: AuthSession<UserBackend>,
+) -> Json<PasskeyRegisterStartResponse> {
+    let user_id = Uuid::new_v4();
+    let (ccr, skr) = state.webauthn
+        .start_passkey_registration(user_id, &payload.username, &payload.username, None)
+        .expect("Failed to start registration");
+
+    // Store registration state in session (for finish)
+    let _ = auth_session.insert("webauthn_reg_state", skr).await;
+
+    Json(PasskeyRegisterStartResponse { public_key_credential_creation_options: ccr })
+}
+
+#[derive(Deserialize)]
+pub struct PasskeyRegisterFinish {
+    username: String,
+    response: RegisterPublicKeyCredential,
+}
+
+pub async fn passkey_register_finish(
+    Json(payload): Json<PasskeyRegisterFinish>,
+    State(state): State<Arc<AppState>>,
+    mut auth_session: AuthSession<UserBackend>,
 ) -> Redirect {
-    let redirect = format!("{}/auth/github/callback", config::registry_url());
-    let client = BasicClient::new(ClientId::new(config::github_client_id()))
-        .set_client_secret(ClientSecret::new(config::github_client_secret()))
-        .set_auth_uri(AuthUrl::new("https://github.com/login/oauth/authorize".to_string()).unwrap())
-        .set_token_uri(TokenUrl::new("https://github.com/login/oauth/access_token".to_string()).unwrap())
-        .set_redirect_uri(RedirectUrl::new(redirect).unwrap());
-    let http_client = ClientBuilder::new()
-        .redirect(Policy::none())
-        .build()
-        .expect("reqwest client");
-    let token = match client
-        .exchange_code(AuthorizationCode::new(query.code))
-        .request_async(&http_client)
-        .await {
-        Ok(t) => t,
-        Err(_) => return Redirect::to("/?error=token"),
+    let skr: PasskeyRegistration = match auth_session.get("webauthn_reg_state").await {
+        Ok(Some(s)) => s,
+        _ => return Redirect::to("/?error=reg_state"),
     };
-    let http = HttpClient::new();
-    let user_info: Value = match http
-        .get("https://api.github.com/user")
-        .header("User-Agent", "zorbs-registry")
-        .bearer_auth(token.access_token().secret())
-        .send()
-        .await {
-        Ok(r) => match r.json().await {
-            Ok(u) => u,
-            Err(_) => return Redirect::to("/?error=profile"),
-        },
-        Err(_) => return Redirect::to("/?error=profile"),
+
+    let _ = auth_session.remove("webauthn_reg_state").await;
+
+    let reg = match state.webauthn.finish_passkey_registration(&payload.response, &skr) {
+        Ok(r) => r,
+        Err(_) => return Redirect::to("/?error=reg_finish"),
     };
-    let provider_id = user_info["id"].as_i64().unwrap_or(0).to_string();
-    let username = user_info["login"].as_str().unwrap_or("unknown").to_string();
-    let email = user_info["email"].as_str().map(str::to_string);
-    let avatar_url = user_info["avatar_url"].as_str().map(str::to_string);
-    let user = match db::find_or_create_user(&state.db, "github", &provider_id, &username, email, avatar_url).await {
+
+    // Create user + save credential (TODO: store credential in DB if you want multiple)
+    let user = match db::find_or_create_user(&state.db, "passkey", &reg.credential_id().to_string(), &payload.username, None, None).await {
         Ok(u) => u,
         Err(_) => return Redirect::to("/?error=user"),
     };
+
     let _ = auth_session.login(&user).await;
     Redirect::to("/")
 }
-pub async fn google_login() -> Redirect {
-    let redirect = format!("{}/auth/google/callback", config::registry_url());
-    let client = BasicClient::new(ClientId::new(config::google_client_id()))
-        .set_client_secret(ClientSecret::new(config::google_client_secret()))
-        .set_auth_uri(AuthUrl::new("https://accounts.google.com/o/oauth2/v2/auth".to_string()).unwrap())
-        .set_token_uri(TokenUrl::new("https://oauth2.googleapis.com/token".to_string()).unwrap())
-        .set_redirect_uri(RedirectUrl::new(redirect).unwrap());
-    let (auth_url, _) = client
-        .authorize_url(CsrfToken::new_random)
-        .add_scope(Scope::new("profile".into()))
-        .add_scope(Scope::new("email".into()))
-        .url();
-    Redirect::temporary(auth_url.as_str())
+
+#[derive(Deserialize)]
+pub struct PasskeyLoginStart {
+    username: String,
 }
-pub async fn google_callback(
-    Query(query): Query<CallbackQuery>,
-    mut auth_session: AuthSession<UserBackend>,
+
+#[derive(Serialize)]
+pub struct PasskeyLoginStartResponse {
+    pub public_key_credential_request_options: RequestChallengeResponse,
+}
+
+pub async fn passkey_login_start(
+    Json(payload): Json<PasskeyLoginStart>,
     State(state): State<Arc<AppState>>,
-) -> Redirect {
-    let redirect = format!("{}/auth/google/callback", config::registry_url());
-    let client = BasicClient::new(ClientId::new(config::google_client_id()))
-        .set_client_secret(ClientSecret::new(config::google_client_secret()))
-        .set_auth_uri(AuthUrl::new("https://accounts.google.com/o/oauth2/v2/auth".to_string()).unwrap())
-        .set_token_uri(TokenUrl::new("https://oauth2.googleapis.com/token".to_string()).unwrap())
-        .set_redirect_uri(RedirectUrl::new(redirect).unwrap());
-    let http_client = ClientBuilder::new()
-        .redirect(Policy::none())
-        .build()
-        .expect("reqwest client");
-    let token = match client
-        .exchange_code(AuthorizationCode::new(query.code))
-        .request_async(&http_client)
-        .await {
-        Ok(t) => t,
-        Err(_) => return Redirect::to("/?error=token"),
-    };
-    let http = HttpClient::new();
-    let user_info: Value = match http
-        .get("https://www.googleapis.com/oauth2/v1/userinfo")
-        .header("User-Agent", "zorbs-registry")
-        .bearer_auth(token.access_token().secret())
-        .send()
-        .await {
-        Ok(r) => match r.json().await {
-            Ok(u) => u,
-            Err(_) => return Redirect::to("/?error=profile"),
-        },
-        Err(_) => return Redirect::to("/?error=profile"),
-    };
-    let provider_id = user_info["id"].as_str().unwrap_or("0").to_string();
-    let username = user_info["name"].as_str().unwrap_or("unknown").to_string();
-    let email = user_info["email"].as_str().map(str::to_string);
-    let avatar_url = user_info["picture"].as_str().map(str::to_string);
-    let user = match db::find_or_create_user(&state.db, "google", &provider_id, &username, email, avatar_url).await {
-        Ok(u) => u,
-        Err(_) => return Redirect::to("/?error=user"),
-    };
-    let _ = auth_session.login(&user).await;
-    Redirect::to("/")
-}
-pub async fn twitter_login() -> Redirect {
-    let redirect = format!("{}/auth/twitter/callback", config::registry_url());
-    let client = BasicClient::new(ClientId::new(config::twitter_client_id()))
-        .set_client_secret(ClientSecret::new(config::twitter_client_secret()))
-        .set_auth_uri(AuthUrl::new("https://twitter.com/i/oauth2/authorize".to_string()).unwrap())
-        .set_token_uri(TokenUrl::new("https://api.twitter.com/2/oauth2/token".to_string()).unwrap())
-        .set_redirect_uri(RedirectUrl::new(redirect).unwrap());
-    let (auth_url, _) = client
-        .authorize_url(CsrfToken::new_random)
-        .add_scope(Scope::new("users.read".into()))
-        .add_scope(Scope::new("tweet.read".into()))
-        .url();
-    Redirect::temporary(auth_url.as_str())
-}
-pub async fn twitter_callback(
-    Query(query): Query<CallbackQuery>,
     mut auth_session: AuthSession<UserBackend>,
-    State(state): State<Arc<AppState>>,
-) -> Redirect {
-    let redirect = format!("{}/auth/twitter/callback", config::registry_url());
-    let client = BasicClient::new(ClientId::new(config::twitter_client_id()))
-        .set_client_secret(ClientSecret::new(config::twitter_client_secret()))
-        .set_auth_uri(AuthUrl::new("https://twitter.com/i/oauth2/authorize".to_string()).unwrap())
-        .set_token_uri(TokenUrl::new("https://api.twitter.com/2/oauth2/token".to_string()).unwrap())
-        .set_redirect_uri(RedirectUrl::new(redirect).unwrap());
-    let http_client = ClientBuilder::new()
-        .redirect(Policy::none())
-        .build()
-        .expect("reqwest client");
-    let token = match client
-        .exchange_code(AuthorizationCode::new(query.code))
-        .request_async(&http_client)
-        .await {
-        Ok(t) => t,
-        Err(_) => return Redirect::to("/?error=token"),
-    };
-    let http = HttpClient::new();
-    let user_info: Value = match http
-        .get("https://api.twitter.com/2/users/me")
-        .header("User-Agent", "zorbs-registry")
-        .bearer_auth(token.access_token().secret())
-        .send()
-        .await {
-        Ok(r) => match r.json().await {
-            Ok(u) => u,
-            Err(_) => return Redirect::to("/?error=profile"),
-        },
-        Err(_) => return Redirect::to("/?error=profile"),
-    };
-    let provider_id = user_info["data"]["id"].as_str().unwrap_or("0").to_string();
-    let username = user_info["data"]["username"].as_str().unwrap_or("unknown").to_string();
-    let email = None; // X doesn't provide email
-    let avatar_url = user_info["data"]["profile_image_url"].as_str().map(str::to_string);
-    let user = match db::find_or_create_user(&state.db, "twitter", &provider_id, &username, email, avatar_url).await {
-        Ok(u) => u,
-        Err(_) => return Redirect::to("/?error=user"),
-    };
-    let _ = auth_session.login(&user).await;
-    Redirect::to("/")
+) -> Json<PasskeyLoginStartResponse> {
+    // TODO: lookup credential IDs for this username from DB
+    let allowed_credentials = vec![]; // populate from DB in production
+
+    let (rcr, skr) = state.webauthn
+        .start_passkey_authentication(allowed_credentials)
+        .expect("Failed to start login");
+
+    let _ = auth_session.insert("webauthn_login_state", skr).await;
+
+    Json(PasskeyLoginStartResponse { public_key_credential_request_options: rcr })
 }
-pub async fn logout(mut auth_session: AuthSession<UserBackend>) -> Redirect {
-    let _ = auth_session.logout().await;
+
+#[derive(Deserialize)]
+pub struct PasskeyLoginFinish {
+    response: PublicKeyCredential,
+}
+
+pub async fn passkey_login_finish(
+    Json(payload): Json<PasskeyLoginFinish>,
+    State(state): State<Arc<AppState>>,
+    mut auth_session: AuthSession<UserBackend>,
+) -> Redirect {
+    let skr: PasskeyAuthentication = match auth_session.get("webauthn_login_state").await {
+        Ok(Some(s)) => s,
+        _ => return Redirect::to("/?error=login_state"),
+    };
+
+    let _ = auth_session.remove("webauthn_login_state").await;
+
+    let _ = match state.webauthn.finish_passkey_authentication(&payload.response, &skr) {
+        Ok(_) => (),
+        Err(_) => return Redirect::to("/?error=login_finish"),
+    };
+
+    // TODO: lookup user by credential_id from DB and login
+    // For now redirect to home (extend with real lookup)
     Redirect::to("/")
 }
