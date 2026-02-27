@@ -1,6 +1,6 @@
 [package]
 name = "zorbs"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["The Zeta Foundation"]
 description = "The official registry for Zorbs by The Zeta Foundation (zorbs.io)"
@@ -36,6 +36,7 @@ axum-login = "0.18"
 tower-sessions = "0.14"
 tower-sessions-sqlx-store = { version = "0.14", features = ["postgres"] }
 time = { version = "0.3", features = ["serde"] }
+webauthn-rs = { version = "0.5", features = ["axum"] }
 
 [[bin]]
 name = "zorbs"
