@@ -35,7 +35,7 @@ axum-login = "0.18"
 tower-sessions = "0.14"
 tower-sessions-sqlx-store = { version = "0.14", features = ["postgres"] }
 time = { version = "0.3", features = ["serde"] }
-webauthn-rs = { version = "0.5.4", features = ["serde"] }
+webauthn-rs = "0.5.4"
 url = "2.5"
 base64 = "0.22"
 [[bin]]
