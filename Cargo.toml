@@ -11,7 +11,6 @@ documentation = "https://zorbs.io/docs"
 readme = "README.md"
 keywords = ["zeta", "package-manager", "registry", "zorbs", "zorb"]
 categories = ["development-tools", "command-line-utilities"]
-
 [dependencies]
 axum = { version = "0.8.8", features = ["json", "macros", "multipart"] }
 tokio = { version = "1.49.0", features = ["full"] }
@@ -38,7 +37,8 @@ tower-sessions-sqlx-store = { version = "0.14", features = ["postgres"] }
 time = { version = "0.3", features = ["serde"] }
 webauthn-rs = "0.5.4"
 url = "2.5"
-
+base64 = "0.22"
+serde_cbor_2 = "0.11"
 [[bin]]
 name = "zorbs"
 path = "src/main.rs"
