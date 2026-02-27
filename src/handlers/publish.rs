@@ -1,5 +1,5 @@
 // src/handlers/publish.rs
-use axum::{Json, extract::{State, Multipart}, response::IntoResponse, http::StatusCode};
+use axum::{Json, extract::{State, Multipart}, response::IntoResponse, http::StatusCode, response::Redirect};
 use serde_json::json;
 use maud::{html, Markup, PreEscaped};
 use axum_login::AuthSession;
@@ -13,8 +13,11 @@ use crate::views;
 use crate::models::user::UserBackend;
 
 pub async fn publish_page(auth_session: AuthSession<UserBackend>) -> Markup {
+    if auth_session.user.is_none() {
+        return html! { (PreEscaped(r#"<script>window.location = "/?error=login_required";</script>"#)) };
+    }
     let mut html_str = views::PUBLISH_HTML.to_string();
-    // dynamic nav with modal trigger
+    // dynamic nav with Passkey-ready modal trigger
     let user = &auth_session.user;
     let auth_html = if let Some(user) = user {
         html! {
