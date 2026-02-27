@@ -140,6 +140,10 @@
                     <i class="fa-brands fa-x-twitter text-xl"></i>
                     Continue with X
                 </a>
+                <button onclick="startPasskeyLogin()" class="flex items-center justify-center gap-3 px-6 py-4 bg-white text-black rounded-2xl hover:bg-cyan-400 hover:text-black transition-all font-medium w-full">
+                    <i class="fa-solid fa-key text-xl"></i>
+                    Sign in with Passkey
+                </button>
             </div>
             <p class="text-center text-xs text-zinc-500 mt-8">Secure • No password required</p>
         </div>
@@ -154,6 +158,20 @@
             const modal = document.getElementById('login-modal');
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+        }
+        async function startPasskeyLogin() {
+            closeModal();
+            const username = prompt("Enter your username for Passkey login:");
+            if (!username) return;
+            const res = await fetch('/auth/passkey/login/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            if (!res.ok) return alert("Passkey start failed");
+            const { public_key_credential_request_options } = await res.json();
+            // TODO: navigator.credentials.get(...) full flow in next step
+            alert("Passkey login started (full WebAuthn flow next)");
         }
     </script>
 </body>
