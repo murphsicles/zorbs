@@ -3,8 +3,9 @@
 FROM rust:latest AS builder
 WORKDIR /app
 COPY . .
-# Install OpenSSL dev deps for openssl-sys (required on Debian)
+# Install deps for openssl-sys + sqlx-cli
 RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN cargo install sqlx-cli --no-default-features --features postgres,runtime-tokio --version 0.8.6
 # Prepare sqlx queries (must run BEFORE SQLX_OFFLINE=true)
 RUN cargo sqlx prepare -- --bin zorbs
 ENV SQLX_OFFLINE=true
