@@ -24,7 +24,7 @@ use crate::config;
 use webauthn_rs::prelude::*;
 use uuid::Uuid;
 use base64::{Engine, engine::general_purpose::STANDARD_NO_PAD};
-use serde_json;
+use serde_cbor_2;
 
 #[derive(Deserialize)]
 pub struct CallbackQuery {
@@ -254,17 +254,18 @@ pub async fn passkey_register_finish(
         Ok(r) => r,
         Err(_) => return Redirect::to("/?error=reg_finish"),
     };
-    let cred_id_str = STANDARD_NO_PAD.encode(reg.cred_id().0.as_slice());
+    let cred_id_str = STANDARD_NO_PAD.encode(reg.cred_id().as_bytes());
     let user = match db::find_or_create_user(&state.db, "passkey", &cred_id_str, &payload.username, None, None).await {
         Ok(u) => u,
         Err(_) => return Redirect::to("/?error=user"),
     };
+    let public_key_bytes = serde_cbor_2::to_vec(reg.get_public_key()).unwrap();
     let _ = sqlx::query!(
         "INSERT INTO webauthn_credentials (user_id, credential_id, public_key, counter)
          VALUES ($1, $2, $3, $4)",
         user.id,
         cred_id_str,
-        reg.get_public_key(),
+        public_key_bytes,
         0i64
     ).execute(&state.db).await;
     let _ = auth_session.login(&user).await;
@@ -288,10 +289,10 @@ pub async fn passkey_login_start(
         payload.username
     ).fetch_all(&state.db).await.unwrap_or_default();
     let creds: Vec<CredentialID> = creds_str.into_iter().filter_map(|s| {
-        STANDARD_NO_PAD.decode(s).ok().map(HumanBinaryData)
+        STANDARD_NO_PAD.decode(s).ok().map(|b| HumanBinaryData(b))
     }).collect();
     let (rcr, skr) = state.webauthn
-        .start_passkey_authentication(creds)
+        .start_passkey_authentication(&creds)
         .expect("Failed to start login");
     let skr_json = serde_json::to_string(&skr).unwrap();
     let _ = auth_session.session.insert("webauthn_login_state", skr_json).await;
@@ -313,7 +314,7 @@ pub async fn passkey_login_finish(
         Ok(r) => r,
         Err(_) => return Redirect::to("/?error=login_finish"),
     };
-    let cred_id_str = STANDARD_NO_PAD.encode(auth_result.cred_id().0.as_slice());
+    let cred_id_str = STANDARD_NO_PAD.encode(auth_result.cred_id().as_bytes());
     let user: Option<User> = sqlx::query_as!(
         User,
         "SELECT * FROM users WHERE id = (SELECT user_id FROM webauthn_credentials WHERE credential_id = $1)",
