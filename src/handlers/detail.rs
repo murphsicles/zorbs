@@ -1,3 +1,4 @@
+// src/handlers/detail.rs
 use axum::extract::{State, Path};
 use axum_login::AuthSession;
 use maud::{html, Markup, PreEscaped};
