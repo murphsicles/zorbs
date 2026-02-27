@@ -253,18 +253,17 @@ pub async fn passkey_register_finish(
         Ok(r) => r,
         Err(_) => return Redirect::to("/?error=reg_finish"),
     };
-    let cred_id_str = STANDARD_NO_PAD.encode(reg.cred_id().as_ref());
+    let cred_id_str = STANDARD_NO_PAD.encode(reg.cred_id().bytes());
     let user = match db::find_or_create_user(&state.db, "passkey", &cred_id_str, &payload.username, None, None).await {
         Ok(u) => u,
         Err(_) => return Redirect::to("/?error=user"),
     };
-    let public_key_bytes = serde_cbor_2::to_vec(reg.get_public_key()).unwrap();
     let _ = sqlx::query!(
         "INSERT INTO webauthn_credentials (user_id, credential_id, public_key, counter)
          VALUES ($1, $2, $3, $4)",
         user.id,
         cred_id_str,
-        public_key_bytes,
+        reg.get_public_key().to_vec(),
         0i64
     ).execute(&state.db).await;
     let _ = auth_session.login(&user).await;
@@ -313,7 +312,7 @@ pub async fn passkey_login_finish(
         Ok(r) => r,
         Err(_) => return Redirect::to("/?error=login_finish"),
     };
-    let cred_id_str = STANDARD_NO_PAD.encode(auth_result.cred_id().as_ref());
+    let cred_id_str = STANDARD_NO_PAD.encode(auth_result.cred_id().bytes());
     let user: Option<User> = sqlx::query_as!(
         User,
         "SELECT id, username, email, provider, provider_id, avatar_url, created_at, updated_at FROM users WHERE id = (SELECT user_id FROM webauthn_credentials WHERE credential_id = $1)",
