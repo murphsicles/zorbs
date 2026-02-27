@@ -3,6 +3,10 @@
 FROM rust:latest AS builder
 WORKDIR /app
 COPY . .
+# Install OpenSSL dev deps for openssl-sys (required on Debian)
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+# Prepare sqlx queries (must run BEFORE SQLX_OFFLINE=true)
+RUN cargo sqlx prepare -- --bin zorbs
 ENV SQLX_OFFLINE=true
 RUN cargo build --release
 
