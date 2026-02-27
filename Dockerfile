@@ -1,11 +1,10 @@
 # Dockerfile
-
 FROM rust:latest AS builder
 WORKDIR /app
 COPY . .
-
+COPY .sqlx .sqlx
 RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
-
+ENV SQLX_OFFLINE=true
 RUN cargo build --release
 
 FROM debian:bookworm-slim
