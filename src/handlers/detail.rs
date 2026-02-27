@@ -55,7 +55,7 @@ async fn render_detail(auth_session: AuthSession<UserBackend>, name: String, sta
     );
     page = page.replace("href=\"#\"", &format!("href=\"{}\"", download_url));
 
-    // dynamic nav (modal trigger or logged-in state)
+    // dynamic nav with Passkey-ready modal trigger
     let user = &auth_session.user;
     let auth_html = if let Some(user) = user {
         html! {
