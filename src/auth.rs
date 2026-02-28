@@ -72,7 +72,7 @@ pub async fn github_callback(
     Redirect::to("/")
 }
 
-pub async fn logout(mut auth_session: AuthSession<User>) -> Redirect {
+pub async fn logout(auth_session: AuthSession<User>) -> Redirect {
     auth_session.logout().await;
     Redirect::to("/")
 }
