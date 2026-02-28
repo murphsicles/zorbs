@@ -30,7 +30,7 @@ flate2 = "1.1.9"
 semver = "1.0.27"
 clap = { version = "4.5.59", features = ["derive"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "multipart", "json"] }
-oauth2 = { version = "5.0", default-features = false, features = ["reqwest"] }
+oauth2 = { version = "5.0.0", default-features = false, features = ["reqwest-rustls-tls"] }
 axum-login = "0.18"
 tower-sessions = "0.14"
 tower-sessions-sqlx-store = { version = "0.14", features = ["postgres"] }
