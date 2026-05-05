@@ -1,5 +1,5 @@
 # Dockerfile
-FROM rust:latest AS builder
+FROM rust:bookworm AS builder
 WORKDIR /app
 COPY . .
 COPY .sqlx .sqlx
