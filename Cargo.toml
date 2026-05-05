@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [package]
 name = "zorbs"
 version = "0.1.2"
@@ -50,3 +51,57 @@ path = "src/main.rs"
 [[bin]]
 name = "zorb"
 path = "src/bin/zorb.rs"
+=======
+[package]
+name = "zorbs"
+version = "0.1.2"
+edition = "2021"
+authors = ["The Zeta Foundation"]
+description = "The official registry for Zorbs by The Zeta Foundation (zorbs.io)"
+license = "MIT"
+repository = "https://github.com/murphsicles/zorbs"
+homepage = "https://zorbs.io"
+documentation = "https://zorbs.io/docs"
+readme = "README.md"
+keywords = ["zeta", "package-manager", "registry", "zorbs", "zorb"]
+categories = ["development-tools", "command-line-utilities"]
+
+[dependencies]
+axum = { version = "0.8.8", features = ["json", "macros", "multipart"] }
+tokio = { version = "1.49.0", features = ["full"] }
+tower-http = { version = "0.6.8", features = ["trace", "cors", "compression-full"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+dotenvy = "0.15.7"
+sqlx = { version = "0.8.6", features = ["runtime-tokio", "tls-rustls", "postgres", "migrate", "chrono", "uuid"] }
+chrono = { version = "0.4.43", features = ["serde"] }
+uuid = { version = "1.21.0", features = ["v4", "serde"] }
+maud = { version = "0.27.0", features = ["axum"] }
+toml = "1.0.3"
+tar = "0.4.44"
+flate2 = "1.1.9"
+semver = "1.0.27"
+clap = { version = "4.5.59", features = ["derive"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "multipart"] }
+oauth2 = { version = "5.0.0", default-features = false, features = ["reqwest"] }
+axum-login = "0.18"
+tower-sessions = "0.14"
+tower-sessions-sqlx-store = { version = "0.14", features = ["postgres"] }
+time = { version = "0.3", features = ["serde"] }
+webauthn-rs = { version = "0.5.4", features = ["danger-allow-state-serialisation"] }
+url = "2.5"
+base64 = "0.22"
+serde_cbor_2 = "0.13"
+
+# This bundles OpenSSL so cross/musl builds without system libs
+openssl-sys = { version = "0.9", features = ["vendored"] }
+
+[[bin]]
+name = "zorbs"
+path = "src/main.rs"
+[[bin]]
+name = "zorb"
+path = "src/bin/zorb.rs"
+>>>>>>> origin/main
