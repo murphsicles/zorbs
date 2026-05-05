@@ -18,8 +18,8 @@ const RESERVED_SCOPES: &[&str] = &[
     "spacex", "nasa", "gov", "cia", "m15", "mi6", "gchq", "mod", "royal", "hrh",
 
     // === OFFICIAL ZETA FOUNDATION SUPER DOMAINS ===
-    // These are the curated, blessed standard library scopes
-    "core", "data", "async", "http", "web", "db", "log", "cli",
+    // These require admin auth to publish to
+    "core", "async", "http", "web", "db", "log", "cli",
     "crypto", "net", "math", "test", "sys", "fmt", "util",
     "config", "time", "random",
 ];
