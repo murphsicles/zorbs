@@ -1,7 +1,8 @@
 // src/handlers/publish.rs
-use axum::{Json, extract::{State, Multipart}, response::IntoResponse, http::StatusCode};
+use axum::{Json, extract::{State, Multipart}, response::IntoResponse, http::StatusCode, response::Redirect};
 use serde_json::json;
 use maud::{html, Markup, PreEscaped};
+use axum_login::AuthSession;
 use std::sync::Arc;
 use tokio::fs;
 use crate::state::AppState;
@@ -9,19 +10,45 @@ use crate::models::NewZorb;
 use crate::utils;
 use crate::config;
 use crate::views;
+use crate::models::user::UserBackend;
 
-pub async fn publish_page() -> Markup {
-    html! { (PreEscaped(views::PUBLISH_HTML)) }
+pub async fn publish_page(auth_session: AuthSession<UserBackend>) -> Markup {
+    if auth_session.user.is_none() {
+        return html! { (PreEscaped(r#"<script>window.location = "/?error=login_required";</script>"#)) };
+    }
+    let mut html_str = views::PUBLISH_HTML.to_string();
+    // dynamic nav with Passkey-ready modal trigger
+    let user = &auth_session.user;
+    let auth_html = if let Some(user) = user {
+        html! {
+            div class="flex items-center gap-6" {
+                span class="text-sm font-medium text-zinc-300" { "@" (user.username) }
+                a href="/auth/logout" class="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-medium rounded-2xl transition-all" {
+                    "Logout"
+                }
+            }
+        }
+    } else {
+        html! {
+            button onclick="openLoginModal()" class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2" {
+                "Sign in"
+                i class="fa-solid fa-right-to-bracket" {}
+            }
+        }
+    };
+    if let Some(pos) = html_str.find("<!-- AUTH_SLOT -->") {
+        html_str.replace_range(pos..pos + "<!-- AUTH_SLOT -->".len(), &auth_html.into_string());
+    }
+    html! { (PreEscaped(html_str)) }
 }
 
-pub async fn publish_zorb(mut multipart: Multipart, State(state): State<Arc<AppState>>) -> impl IntoResponse {
+pub async fn publish_zorb(State(state): State<Arc<AppState>>, mut multipart: Multipart) -> impl IntoResponse {
     let mut form_name = String::new();
     let mut form_version = String::new();
     let mut form_description: Option<String> = None;
     let mut form_license: Option<String> = None;
     let mut form_repository: Option<String> = None;
     let mut file_bytes: Option<Vec<u8>> = None;
-
     while let Some(field) = multipart.next_field().await.unwrap_or(None) {
         match field.name() {
             Some("name") => form_name = field.text().await.unwrap_or_default(),
@@ -33,12 +60,10 @@ pub async fn publish_zorb(mut multipart: Multipart, State(state): State<Arc<AppS
             _ => {}
         }
     }
-
     let file_bytes_vec = match file_bytes {
         Some(bytes) if !bytes.is_empty() => bytes,
         _ => return (StatusCode::BAD_REQUEST, Json(json!({"error": "File upload is required"}))),
     };
-
     let new_zorb = match utils::parse_zorb_toml(&file_bytes_vec) {
         Ok(parsed) => parsed,
         Err(err) => {
@@ -54,18 +79,15 @@ pub async fn publish_zorb(mut multipart: Multipart, State(state): State<Arc<AppS
             }
         }
     };
-
     let filename = utils::zorb_filename(&new_zorb.name, &new_zorb.version);
     let upload_path = format!("{}/{}", config::upload_dir(), filename);
-
     fs::create_dir_all(&config::upload_dir()).await.unwrap();
     fs::write(&upload_path, &file_bytes_vec).await.unwrap();
-
     let id = uuid::Uuid::new_v4();
     let _ = sqlx::query!(
         "INSERT INTO zorbs (id, name, version, description, license, repository, downloads, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, 0, NOW(), NOW())
-         ON CONFLICT (name, version) DO UPDATE SET 
+         ON CONFLICT (name, version) DO UPDATE SET
             description = EXCLUDED.description,
             license = EXCLUDED.license,
             repository = EXCLUDED.repository,
@@ -79,7 +101,6 @@ pub async fn publish_zorb(mut multipart: Multipart, State(state): State<Arc<AppS
     )
     .execute(&state.db)
     .await;
-
     (StatusCode::CREATED, Json(json!({
         "success": true,
         "id": id,

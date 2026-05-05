@@ -27,13 +27,9 @@
                 <a href="#" class="hover:text-cyan-400 transition-colors">Docs</a>
                 <a href="#" class="hover:text-cyan-400 transition-colors">Blog</a>
             </div>
-            <button class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2">
-                <i class="fa-brands fa-github"></i>
-                Login with GitHub
-            </button>
+            <!-- AUTH_SLOT -->
         </div>
     </nav>
-
     <div class="pt-28 pb-20">
         <div class="max-w-screen-2xl mx-auto px-8 text-center">
             <h1 class="text-8xl font-black tracking-tighter hero-glow">ZORBS</h1>
@@ -42,12 +38,11 @@
                 The official package registry for Zeta.<br>
                 Where Rust uses crates, Zeta uses zorbs.
             </p>
-
             <div class="max-w-3xl mx-auto mt-16">
                 <div class="relative">
-                    <input 
+                    <input
                         id="search-input"
-                        type="text" 
+                        type="text"
                         placeholder="Search zorbs... (e.g. async runtime, http server, json parser)"
                         class="w-full bg-zinc-900 border border-zinc-700 focus:border-cyan-500 rounded-3xl px-8 py-7 text-lg outline-none transition-all"
                         hx-get="/api/search"
@@ -60,9 +55,7 @@
                 </div>
             </div>
         </div>
-
         <div id="search-results" class="max-w-screen-2xl mx-auto px-8 mt-12"></div>
-
         <div class="max-w-screen-2xl mx-auto px-8 mt-20">
             <h2 class="text-3xl font-semibold mb-10 flex items-center gap-3">
                 <span class="text-cyan-400">🔥</span> Trending this week
@@ -98,7 +91,7 @@
                     <div class="flex justify-between items-start">
                         <div>
                             <span class="font-mono text-cyan-400">@data/serde</span>
-                            <p class="text-zinc-400 mt-2 text-sm">Fast &amp; safe serialization</p>
+                            <p class="text-zinc-400 mt-2 text-sm">Fast & safe serialization</p>
                         </div>
                         <span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full">v1.0.210</span>
                     </div>
@@ -123,9 +116,91 @@
             </div>
         </div>
     </div>
-
     <footer class="border-t border-zinc-800 py-12 text-center text-zinc-500 text-sm">
         Powered by The Zeta Foundation • © 2026 zorbs.io
     </footer>
+
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[100]">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-8 max-w-sm w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-semibold tracking-tight">Sign in to Zorbs</h3>
+                <button onclick="closeModal()" class="text-zinc-400 hover:text-white text-2xl leading-none">×</button>
+            </div>
+            <div class="space-y-3">
+                <a href="/auth/github" onclick="closeModal()" class="flex items-center justify-center gap-3 px-6 py-4 bg-white text-black rounded-2xl hover:bg-cyan-400 hover:text-black transition-all font-medium">
+                    <i class="fa-brands fa-github text-xl"></i>
+                    Continue with GitHub
+                </a>
+                <a href="/auth/google" onclick="closeModal()" class="flex items-center justify-center gap-3 px-6 py-4 bg-white text-black rounded-2xl hover:bg-cyan-400 hover:text-black transition-all font-medium">
+                    <i class="fa-brands fa-google text-xl"></i>
+                    Continue with Google
+                </a>
+                <a href="/auth/twitter" onclick="closeModal()" class="flex items-center justify-center gap-3 px-6 py-4 bg-white text-black rounded-2xl hover:bg-cyan-400 hover:text-black transition-all font-medium">
+                    <i class="fa-brands fa-x-twitter text-xl"></i>
+                    Continue with X
+                </a>
+                <button onclick="startPasskeyLogin()" class="flex items-center justify-center gap-3 px-6 py-4 bg-white text-black rounded-2xl hover:bg-cyan-400 hover:text-black transition-all font-medium w-full">
+                    <i class="fa-solid fa-key text-xl"></i>
+                    Sign in with Passkey
+                </button>
+            </div>
+            <p class="text-center text-xs text-zinc-500 mt-8">Secure • No password required</p>
+        </div>
+    </div>
+
+    <script>
+        function openLoginModal() {
+            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('login-modal').classList.add('flex');
+        }
+        function closeModal() {
+            const modal = document.getElementById('login-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        async function startPasskeyRegister() {
+            closeModal();
+            const username = prompt("Username for new Passkey:");
+            if (!username) return;
+            const res = await fetch('/auth/passkey/register/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            if (!res.ok) return alert("Register start failed");
+            const {public_key_credential_creation_options: pkco} = await res.json();
+            try {
+                const cred = await navigator.credentials.create({ publicKey: pkco });
+                const f = await fetch('/auth/passkey/register/finish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, response: cred })
+                });
+                if (f.ok) location.reload(); else alert("Register finish failed");
+            } catch (e) { alert("Passkey creation failed: " + e.message); }
+        }
+        async function startPasskeyLogin() {
+            closeModal();
+            const username = prompt("Enter your username for Passkey login:");
+            if (!username) return;
+            const res = await fetch('/auth/passkey/login/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            if (!res.ok) return alert("Login start failed");
+            const {public_key_credential_request_options: pkro} = await res.json();
+            try {
+                const cred = await navigator.credentials.get({ publicKey: pkro });
+                const f = await fetch('/auth/passkey/login/finish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ response: cred })
+                });
+                if (f.ok) location.reload(); else alert("Login finish failed");
+            } catch (e) { alert("Passkey authentication failed: " + e.message); }
+        }
+    </script>
 </body>
 </html>

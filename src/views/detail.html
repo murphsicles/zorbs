@@ -23,13 +23,9 @@
                 <a href="#" class="hover:text-cyan-400 transition-colors">Docs</a>
                 <a href="#" class="hover:text-cyan-400 transition-colors">Blog</a>
             </div>
-            <button class="px-8 py-3 bg-white text-black font-semibold rounded-2xl hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-2">
-                <i class="fa-brands fa-github"></i>
-                Login with GitHub
-            </button>
+            <!-- AUTH_SLOT -->
         </div>
     </nav>
-
     <div class="pt-28 max-w-5xl mx-auto px-8">
         <div class="flex items-start justify-between">
             <div>
@@ -42,11 +38,10 @@
                 </div>
             </div>
         </div>
-
         <div class="mt-8 bg-zinc-900 border border-zinc-800 rounded-3xl p-10">
             <div class="flex items-center justify-between mb-8">
                 <div class="flex items-center gap-4">
-                    <button onclick="navigator.clipboard.writeText('zorb add {{name}}')" 
+                    <button onclick="navigator.clipboard.writeText('zorb add {{name}}')"
                             class="px-8 py-4 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-3 text-lg font-medium">
                         <i class="fa-solid fa-copy"></i>
                         zorb add {{name}}
@@ -56,9 +51,7 @@
                     <i class="fa-solid fa-download"></i> Download latest (v{{latest.version}})
                 </a>
             </div>
-
             <p class="text-xl text-zinc-300 leading-relaxed">{{latest.description}}</p>
-
             <div class="mt-12 grid grid-cols-3 gap-6 text-sm">
                 <div>
                     <div class="text-zinc-500">License</div>
@@ -74,7 +67,6 @@
                 </div>
             </div>
         </div>
-
         <div class="mt-16 bg-zinc-900 border border-zinc-800 rounded-3xl p-10">
             <h2 class="text-3xl font-semibold mb-8 flex items-center gap-3">
                 <span class="text-cyan-400">🔗</span> Dependencies
@@ -98,7 +90,6 @@
                 </div>
             </div>
         </div>
-
         <div class="mt-16">
             <h2 class="text-3xl font-semibold mb-8 flex items-center gap-3">
                 <span class="text-cyan-400">📜</span> Version History
@@ -120,7 +111,7 @@
                             <td class="px-8 py-6 text-zinc-400">12.4k downloads</td>
                             <td class="px-8 py-6 text-right">
                                 <a href="#" class="text-cyan-400 hover:text-cyan-300 font-medium flex items-center justify-end gap-2">
-                                    Download 
+                                    Download
                                     <i class="fa-solid fa-arrow-down"></i>
                                 </a>
                             </td>
@@ -131,7 +122,7 @@
                             <td class="px-8 py-6 text-zinc-400">8.2k downloads</td>
                             <td class="px-8 py-6 text-right">
                                 <a href="#" class="text-cyan-400 hover:text-cyan-300 font-medium flex items-center justify-end gap-2">
-                                    Download 
+                                    Download
                                     <i class="fa-solid fa-arrow-down"></i>
                                 </a>
                             </td>
@@ -141,9 +132,91 @@
             </div>
         </div>
     </div>
-
     <footer class="border-t border-zinc-800 py-12 text-center text-zinc-500 text-sm mt-20">
         Powered by The Zeta Foundation • © 2026 zorbs.io
     </footer>
+
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[100]">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-8 max-w-sm w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-semibold tracking-tight">Sign in to zorbs</h3>
+                <button onclick="closeModal()" class="text-zinc-400 hover:text-white text-2xl leading-none">×</button>
+            </div>
+            <div class="space-y-3">
+                <a href="/auth/github" onclick="closeModal()" class="flex items-center justify-center gap-3 px-6 py-4 bg-white text-black rounded-2xl hover:bg-cyan-400 hover:text-black transition-all font-medium">
+                    <i class="fa-brands fa-github text-xl"></i>
+                    Continue with GitHub
+                </a>
+                <a href="/auth/google" onclick="closeModal()" class="flex items-center justify-center gap-3 px-6 py-4 bg-white text-black rounded-2xl hover:bg-cyan-400 hover:text-black transition-all font-medium">
+                    <i class="fa-brands fa-google text-xl"></i>
+                    Continue with Google
+                </a>
+                <a href="/auth/twitter" onclick="closeModal()" class="flex items-center justify-center gap-3 px-6 py-4 bg-white text-black rounded-2xl hover:bg-cyan-400 hover:text-black transition-all font-medium">
+                    <i class="fa-brands fa-x-twitter text-xl"></i>
+                    Continue with X
+                </a>
+                <button onclick="startPasskeyLogin()" class="flex items-center justify-center gap-3 px-6 py-4 bg-white text-black rounded-2xl hover:bg-cyan-400 hover:text-black transition-all font-medium w-full">
+                    <i class="fa-solid fa-key text-xl"></i>
+                    Sign in with Passkey
+                </button>
+            </div>
+            <p class="text-center text-xs text-zinc-500 mt-8">Secure • No password required</p>
+        </div>
+    </div>
+
+    <<script>
+        function openLoginModal() {
+            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('login-modal').classList.add('flex');
+        }
+        function closeModal() {
+            const modal = document.getElementById('login-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        async function startPasskeyRegister() {
+            closeModal();
+            const username = prompt("Username for new Passkey:");
+            if (!username) return;
+            const res = await fetch('/auth/passkey/register/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            if (!res.ok) return alert("Register start failed");
+            const {public_key_credential_creation_options: pkco} = await res.json();
+            try {
+                const cred = await navigator.credentials.create({ publicKey: pkco });
+                const f = await fetch('/auth/passkey/register/finish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, response: cred })
+                });
+                if (f.ok) location.reload(); else alert("Register finish failed");
+            } catch (e) { alert("Passkey creation failed: " + e.message); }
+        }
+        async function startPasskeyLogin() {
+            closeModal();
+            const username = prompt("Enter your username for Passkey login:");
+            if (!username) return;
+            const res = await fetch('/auth/passkey/login/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            if (!res.ok) return alert("Login start failed");
+            const {public_key_credential_request_options: pkro} = await res.json();
+            try {
+                const cred = await navigator.credentials.get({ publicKey: pkro });
+                const f = await fetch('/auth/passkey/login/finish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ response: cred })
+                });
+                if (f.ok) location.reload(); else alert("Login finish failed");
+            } catch (e) { alert("Passkey authentication failed: " + e.message); }
+        }
+    </script>
 </body>
 </html>

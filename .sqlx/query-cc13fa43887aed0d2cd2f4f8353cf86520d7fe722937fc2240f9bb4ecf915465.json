@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE zorbs SET downloads = downloads + 1 WHERE name = $1 AND version = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cc13fa43887aed0d2cd2f4f8353cf86520d7fe722937fc2240f9bb4ecf915465"
+}

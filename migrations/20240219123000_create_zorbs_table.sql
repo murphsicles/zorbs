@@ -10,6 +10,5 @@ CREATE TABLE IF NOT EXISTS zorbs (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     UNIQUE (name, version)
 );
-
 CREATE INDEX IF NOT EXISTS idx_zorbs_downloads ON zorbs (downloads DESC);
 CREATE INDEX IF NOT EXISTS idx_zorbs_name ON zorbs (name);

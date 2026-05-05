@@ -1,5 +1,36 @@
 // src/db.rs
 use sqlx::PgPool;
+use crate::models::User;
+
+pub async fn find_or_create_user(
+    pool: &PgPool,
+    provider: &str,
+    provider_id: &str,
+    username: &str,
+    email: Option<String>,
+    avatar_url: Option<String>,
+) -> Result<User, sqlx::Error> {
+    sqlx::query_as!(
+        User,
+        r#"
+        INSERT INTO users (provider, provider_id, username, email, avatar_url)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (provider, provider_id) DO UPDATE SET
+            username = EXCLUDED.username,
+            email = EXCLUDED.email,
+            avatar_url = EXCLUDED.avatar_url,
+            updated_at = NOW()
+        RETURNING id, username, email, provider, provider_id, avatar_url, created_at, updated_at
+        "#,
+        provider,
+        provider_id,
+        username,
+        email,
+        avatar_url
+    )
+    .fetch_one(pool)
+    .await
+}
 
 pub async fn run_migrations(pool: &PgPool) {
     sqlx::migrate!()
