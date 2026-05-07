@@ -16,7 +16,7 @@ pub struct SearchParams {
     q: Option<String>,
 }
 
-pub async fn homepage(auth_session: AuthSession<UserBackend>) -> Markup {
+pub async fn homepage(auth_session: AuthSession<UserBackend>, State(state): State<Arc<AppState>>) -> Markup {
     let user = &auth_session.user;
     let auth_html = if let Some(user) = user {
         html! {
@@ -39,6 +39,50 @@ pub async fn homepage(auth_session: AuthSession<UserBackend>) -> Markup {
     if let Some(pos) = html_str.find("<!-- AUTH_SLOT -->") {
         html_str.replace_range(pos..pos + "<!-- AUTH_SLOT -->".len(), &auth_html.into_string());
     }
+
+    // Build dynamic trending cards from top downloaded zorbs
+    let trending = queries::list_zorbs(&state.db).await;
+    let trending_cards: String = trending.iter().map(|zorb| {
+        let href = format!("/{}", zorb.name);
+        let downloads_str = if zorb.downloads >= 1_000_000 {
+            format!("{}M", zorb.downloads / 1_000_000)
+        } else if zorb.downloads >= 1_000 {
+            format!("{}k", zorb.downloads / 1_000)
+        } else {
+            zorb.downloads.to_string()
+        };
+        let stars = zorb.downloads / 100;
+        let stars_str = if stars >= 1_000 {
+            format!("{}.{}k", stars / 1_000, (stars % 1_000) / 100)
+        } else {
+            stars.to_string()
+        };
+        format!(
+            r##"<a href="{href}" class="block">
+                <div class="zorb-card bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="font-mono text-cyan-400">{name}</span>
+                            <p class="text-zinc-400 mt-2 text-sm">{desc}</p>
+                        </div>
+                        <span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full">v{version}</span>
+                    </div>
+                    <div class="mt-8 text-xs text-zinc-500 flex gap-6">
+                        <span>↓ {downloads}</span>
+                        <span>★ {stars}</span>
+                    </div>
+                </div>
+            </a>"##,
+            href = href,
+            name = zorb.name,
+            desc = zorb.description.as_deref().unwrap_or("No description"),
+            version = zorb.version,
+            downloads = downloads_str,
+            stars = stars_str,
+        )
+    }).collect::<Vec<_>>().join("\n");
+    html_str = html_str.replace("<!-- TRENDING_CARDS -->", &trending_cards);
+
     html! { (PreEscaped(html_str)) }
 }
 
@@ -81,25 +125,27 @@ pub async fn list_zorbs(State(_state): State<Arc<AppState>>) -> impl IntoRespons
 }
 
 pub async fn seed_official(State(state): State<Arc<AppState>>) -> Redirect {
+    use serde_json::json;
     let official = vec![
-        ("@data/serde", "1.0.210", "Fast & safe serialization", "MIT OR Apache-2.0", Some("https://github.com/zeta-lang/serde")),
-        ("@async/tokio", "1.42.0", "The async runtime that powers Zeta", "MIT", Some("https://github.com/zeta-lang/tokio")),
-        ("@http/axum", "0.8.1", "Ergonomic web framework", "MIT", Some("https://github.com/zeta-lang/axum")),
-        ("@core/once_cell", "1.19.0", "Single assignment cells", "MIT OR Apache-2.0", Some("https://github.com/zeta-lang/once_cell")),
-        ("@log/tracing", "0.2.5", "Structured, performant logging", "MIT", Some("https://github.com/zeta-lang/tracing")),
-        ("@cli/clap", "4.5.0", "Command line argument parser", "MIT OR Apache-2.0", Some("https://github.com/zeta-lang/clap")),
+        ("@data/serde", "0.4.0", "Serialization/Deserialization framework for Zeta", "MIT", Some("https://github.com/murphsicles/serde"), json!({})),
+        ("@async/tokio", "1.42.0", "The async runtime that powers Zeta", "MIT", Some("https://github.com/zeta-lang/tokio"), json!({})),
+        ("@http/axum", "0.8.1", "Ergonomic web framework", "MIT", Some("https://github.com/zeta-lang/axum"), json!({"@async/tokio": "^1.42", "@http/hyper": "^1.3"})),
+        ("@core/once_cell", "1.19.0", "Single assignment cells", "MIT OR Apache-2.0", Some("https://github.com/zeta-lang/once_cell"), json!({})),
+        ("@log/tracing", "0.2.5", "Structured, performant logging", "MIT", Some("https://github.com/zeta-lang/tracing"), json!({"@core/once_cell": "^1.19"})),
+        ("@cli/clap", "4.5.0", "Command line argument parser", "MIT OR Apache-2.0", Some("https://github.com/zeta-lang/clap"), json!({})),
     ];
-    for (name, version, description, license, repository) in official {
+    for (name, version, description, license, repository, deps) in official {
         let _ = sqlx::query!(
-            "INSERT INTO zorbs (id, name, version, description, license, repository, downloads, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, 0, NOW(), NOW())
+            "INSERT INTO zorbs (id, name, version, description, license, repository, downloads, created_at, updated_at, dependencies)
+             VALUES ($1, $2, $3, $4, $5, $6, 0, NOW(), NOW(), $7)
              ON CONFLICT (name, version) DO NOTHING",
             uuid::Uuid::new_v4(),
             name,
             version,
             Some(description),
             Some(license),
-            repository
+            repository,
+            deps as _,
         )
         .execute(&state.db)
         .await;

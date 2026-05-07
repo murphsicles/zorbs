@@ -3,6 +3,7 @@ use std::io::{Cursor, Read};
 use flate2::read::GzDecoder;
 use tar::Archive;
 use toml::Value;
+use serde_json;
 use crate::models::NewZorb;
 use semver::Version;
 
@@ -16,9 +17,6 @@ const RESERVED_SCOPES: &[&str] = &[
     "bitbucket", "adobe", "uber", "airbnb", "lyft", "samsung", "sony", "grok", "bitcoin",
     "btc", "bch", "bsv", "xrp", "sol", "solana", "bags", "bagsapp", "bagged", "crypto",
     "spacex", "nasa", "gov", "cia", "m15", "mi6", "gchq", "mod", "royal", "hrh",
-
-    // === OFFICIAL ZETA FOUNDATION SUPER DOMAINS ===
-    // These require admin auth to publish to
     "core", "async", "http", "web", "db", "log", "cli",
     "crypto", "net", "math", "test", "sys", "fmt", "util",
     "config", "time", "random",
@@ -40,7 +38,6 @@ pub fn validate_package_name(name: &str) -> Result<(), String> {
         return Err("Package name cannot be empty".to_string());
     }
     let lower_name = name.to_lowercase();
-    // Hard block NSFW/profane anywhere in the name
     for word in BLOCKED_WORDS {
         if lower_name.contains(word) {
             return Err("Package name contains inappropriate content and is not allowed.".to_string());
@@ -53,7 +50,6 @@ pub fn validate_package_name(name: &str) -> Result<(), String> {
         }
         let scope = parts[0].trim_start_matches('@').to_lowercase();
         let pkg = parts[1].to_lowercase();
-        // Reserved brand scopes + official Zeta Super Domains
         if RESERVED_SCOPES.contains(&scope.as_str()) {
             return Err(format!("The scope '@{}' is reserved by the Zeta Foundation.", scope));
         }
@@ -71,7 +67,6 @@ pub fn validate_package_name(name: &str) -> Result<(), String> {
         if !pkg.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') || pkg.starts_with('-') || pkg.ends_with('-') {
             return Err("Package name may only contain alphanumeric characters, -, _ and must not start or end with -".to_string());
         }
-        // Also block reserved names for flat packages
         if RESERVED_SCOPES.contains(&pkg.as_str()) {
             return Err(format!("The name '{}' is reserved by the Zeta Foundation.", name));
         }
@@ -105,6 +100,16 @@ pub fn parse_zorb_toml(file_bytes: &[u8]) -> Result<NewZorb, String> {
         Ok(e) => e,
         Err(e) => return Err(format!("Failed to read tar archive: {}", e)),
     };
+
+    let mut zorb_name: Option<String> = None;
+    let mut zorb_version: Option<String> = None;
+    let mut zorb_description: Option<String> = None;
+    let mut zorb_license: Option<String> = None;
+    let mut zorb_repository: Option<String> = None;
+    let mut zorb_dependencies: serde_json::Value = serde_json::Value::Object(Default::default());
+    let mut zorb_readme: Option<String> = None;
+    let mut found_toml = false;
+
     for entry_result in entries {
         let mut entry = match entry_result {
             Ok(e) => e,
@@ -117,6 +122,17 @@ pub fn parse_zorb_toml(file_bytes: &[u8]) -> Result<NewZorb, String> {
         if !is_safe_path(&path) {
             return Err("Path traversal attempt detected in tarball".to_string());
         }
+
+        // Extract README.md from root
+        let path_lower = path.to_lowercase();
+        if path_lower == "readme.md" {
+            let mut content = String::new();
+            if entry.read_to_string(&mut content).is_ok() && !content.is_empty() {
+                zorb_readme = Some(content);
+            }
+            continue;
+        }
+
         if path.ends_with("zorb.toml") || path.ends_with("Zorb.toml") {
             let mut content = String::new();
             if let Err(e) = entry.read_to_string(&mut content) {
@@ -140,17 +156,43 @@ pub fn parse_zorb_toml(file_bytes: &[u8]) -> Result<NewZorb, String> {
             };
             validate_package_name(&name)?;
             validate_version(&version)?;
-            let description = package.get("description").and_then(Value::as_str).map(str::to_string);
-            let license = package.get("license").and_then(Value::as_str).map(str::to_string);
-            let repository = package.get("repository").and_then(Value::as_str).map(str::to_string);
-            return Ok(NewZorb {
-                name,
-                version,
-                description,
-                license,
-                repository,
-            });
+            zorb_name = Some(name);
+            zorb_version = Some(version);
+            zorb_description = package.get("description").and_then(Value::as_str).map(str::to_string);
+            zorb_license = package.get("license").and_then(Value::as_str).map(str::to_string);
+            zorb_repository = package.get("repository").and_then(Value::as_str).map(str::to_string);
+
+            // Extract [dependencies] section
+            if let Some(deps) = parsed.get("dependencies").and_then(Value::as_table) {
+                let mut map = serde_json::Map::new();
+                for (dep_name, dep_val) in deps {
+                    let version_str = match dep_val {
+                        Value::String(s) => s.clone(),
+                        Value::Table(t) => {
+                            t.get("version").and_then(Value::as_str).unwrap_or("*").to_string()
+                        }
+                        _ => dep_val.to_string(),
+                    };
+                    map.insert(dep_name.clone(), serde_json::Value::String(version_str));
+                }
+                zorb_dependencies = serde_json::Value::Object(map);
+            }
+
+            found_toml = true;
         }
     }
-    Err("No zorb.toml found in the uploaded tarball".to_string())
+
+    if !found_toml {
+        return Err("No zorb.toml found in the uploaded tarball".to_string());
+    }
+
+    Ok(NewZorb {
+        name: zorb_name.unwrap(),
+        version: zorb_version.unwrap(),
+        description: zorb_description,
+        license: zorb_license,
+        repository: zorb_repository,
+        dependencies: zorb_dependencies,
+        readme: zorb_readme,
+    })
 }

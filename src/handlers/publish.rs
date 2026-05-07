@@ -48,6 +48,8 @@ pub async fn publish_zorb(State(state): State<Arc<AppState>>, mut multipart: Mul
     let mut form_description: Option<String> = None;
     let mut form_license: Option<String> = None;
     let mut form_repository: Option<String> = None;
+    let mut form_dependencies: Option<serde_json::Value> = None;
+    let mut form_readme: Option<String> = None;
     let mut file_bytes: Option<Vec<u8>> = None;
     while let Some(field) = multipart.next_field().await.unwrap_or(None) {
         match field.name() {
@@ -76,6 +78,8 @@ pub async fn publish_zorb(State(state): State<Arc<AppState>>, mut multipart: Mul
                 description: form_description,
                 license: form_license,
                 repository: form_repository,
+                dependencies: serde_json::json!({}),
+                readme: None,
             }
         }
     };
@@ -85,19 +89,23 @@ pub async fn publish_zorb(State(state): State<Arc<AppState>>, mut multipart: Mul
     fs::write(&upload_path, &file_bytes_vec).await.unwrap();
     let id = uuid::Uuid::new_v4();
     let _ = sqlx::query!(
-        "INSERT INTO zorbs (id, name, version, description, license, repository, downloads, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, 0, NOW(), NOW())
+        "INSERT INTO zorbs (id, name, version, description, license, repository, downloads, created_at, updated_at, dependencies, readme)
+         VALUES ($1, $2, $3, $4, $5, $6, 0, NOW(), NOW(), $7, $8)
          ON CONFLICT (name, version) DO UPDATE SET
             description = EXCLUDED.description,
             license = EXCLUDED.license,
             repository = EXCLUDED.repository,
+            dependencies = EXCLUDED.dependencies,
+            readme = EXCLUDED.readme,
             updated_at = NOW()",
         id,
         new_zorb.name,
         new_zorb.version,
         new_zorb.description,
         new_zorb.license,
-        new_zorb.repository
+        new_zorb.repository,
+        &new_zorb.dependencies as _,
+        new_zorb.readme
     )
     .execute(&state.db)
     .await;
