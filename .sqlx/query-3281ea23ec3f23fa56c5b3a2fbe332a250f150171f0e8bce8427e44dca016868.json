@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO zorbs (id, name, version, description, license, repository, downloads, created_at, updated_at, dependencies)\n             VALUES ($1, $2, $3, $4, $5, $6, 0, NOW(), NOW(), $7)\n             ON CONFLICT (name, version) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3281ea23ec3f23fa56c5b3a2fbe332a250f150171f0e8bce8427e44dca016868"
+}
