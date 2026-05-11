@@ -11,47 +11,59 @@
         body { background: linear-gradient(180deg, #0a0a0a 0%, #111111 100%); }
         .drop-zone { transition: all 0.3s; }
         .drop-zone.dragover { background-color: rgb(34 211 238 / 0.1); border-color: rgb(34 211 238); }
+        .text-6xl { font-size: 2.75rem !important; }
+        .text-sm { font-size: 1.0rem; }
     </style>
 </head>
 <body class="text-white min-h-screen">
     <nav class="border-b border-zinc-800 bg-black/90 backdrop-blur-lg fixed w-full z-50">
-        <div class="max-w-screen-2xl mx-auto px-8 py-5 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <span class="text-4xl font-black tracking-tighter text-cyan-400">Z</span>
-                <span class="text-3xl font-semibold tracking-tighter">ORBS</span>
+        <div class="max-w-screen-2xl mx-auto px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <img src="/assets/128.png" alt="ZORBS" style="height: 3rem;" class="h-8 sm:h-12">
             </div>
-            <div class="flex items-center gap-10 text-sm font-medium">
+            <button id="nav-toggle" class="sm:hidden text-2xl text-zinc-400 hover:text-white transition-colors" aria-label="Toggle navigation">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div id="nav-links" class="hidden sm:flex items-center gap-4 md:gap-10 text-sm font-medium">
                 <a href="/" class="hover:text-cyan-400 transition-colors">Discover</a>
                 <a href="/publish" class="text-cyan-400 font-semibold">Publish</a>
                 <a href="#" class="hover:text-cyan-400 transition-colors">Docs</a>
-                <a href="#" class="hover:text-cyan-400 transition-colors">Blog</a>
             </div>
             <!-- AUTH_SLOT -->
         </div>
+        <!-- Mobile menu dropdown -->
+        <div id="mobile-menu" class="hidden sm:hidden border-t border-zinc-800 bg-black/95 backdrop-blur-lg">
+            <div class="px-4 py-4 flex flex-col gap-4 text-sm font-medium">
+                <a href="/" class="hover:text-cyan-400 transition-colors py-2">Discover</a>
+                <a href="/publish" class="text-cyan-400 font-semibold py-2">Publish</a>
+                <a href="#" class="hover:text-cyan-400 transition-colors py-2">Docs</a>
+                <!-- AUTH_SLOT_MOBILE -->
+            </div>
+        </div>
     </nav>
-    <div class="pt-28 max-w-2xl mx-auto px-6">
-        <div class="text-center mb-12">
-            <h1 class="text-6xl font-black tracking-tighter">Publish a Zorb</h1>
-            <p class="text-xl text-zinc-400 mt-4">Share your Zeta library with the world in seconds</p>
+    <div class="pt-24 sm:pt-28 max-w-2xl mx-auto px-4 sm:px-6">
+        <div class="text-center mb-8 sm:mb-12">
+            <h1 class="text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter">Publish a Zorb</h1>
+            <p class="text-base sm:text-lg md:text-xl text-zinc-400 mt-3 sm:mt-4">Share your Zeta library with the world in seconds</p>
         </div>
         <form id="publish-form"
               hx-post="/api/zorbs/new"
               hx-swap="outerHTML"
-              class="bg-zinc-900 border border-zinc-800 rounded-3xl p-10 space-y-8">
+              class="bg-zinc-900 border border-zinc-800 rounded-2xl sm:rounded-3xl p-6 sm:p-10 space-y-6 sm:space-y-8">
             <div>
-                <label class="block text-sm font-medium text-zinc-400 mb-2">Package Name</label>
+                <label class="block text-xs sm:text-sm font-medium text-zinc-400 mb-2">Package Name</label>
                 <input type="text" name="name" required placeholder="@myteam/my-awesome-zorb"
-                       class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-2xl px-6 py-4 text-lg outline-none">
+                       class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-xl sm:rounded-2xl px-5 sm:px-6 py-3 sm:py-4 text-base sm:text-lg outline-none">
             </div>
-            <div class="grid grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                    <label class="block text-sm font-medium text-zinc-400 mb-2">Version</label>
+                    <label class="block text-xs sm:text-sm font-medium text-zinc-400 mb-2">Version</label>
                     <input type="text" name="version" required placeholder="0.1.0"
-                           class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-2xl px-6 py-4 text-lg outline-none">
+                           class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-xl sm:rounded-2xl px-5 sm:px-6 py-3 sm:py-4 text-base sm:text-lg outline-none">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-zinc-400 mb-2">License</label>
-                    <select name="license" class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-2xl px-6 py-4 text-lg outline-none">
+                    <label class="block text-xs sm:text-sm font-medium text-zinc-400 mb-2">License</label>
+                    <select name="license" class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-xl sm:rounded-2xl px-5 sm:px-6 py-3 sm:py-4 text-base sm:text-lg outline-none">
                         <option value="MIT">MIT</option>
                         <option value="Apache-2.0">Apache-2.0</option>
                         <option value="MIT OR Apache-2.0">MIT OR Apache-2.0</option>
@@ -60,35 +72,35 @@
                 </div>
             </div>
             <div>
-                <label class="block text-sm font-medium text-zinc-400 mb-2">Description</label>
+                <label class="block text-xs sm:text-sm font-medium text-zinc-400 mb-2">Description</label>
                 <textarea name="description" rows="4" placeholder="A blazing fast HTTP server for Zeta..."
-                          class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-3xl px-6 py-4 text-lg outline-none resize-none"></textarea>
+                          class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-2xl sm:rounded-3xl px-5 sm:px-6 py-3 sm:py-4 text-base sm:text-lg outline-none resize-none"></textarea>
             </div>
             <div>
-                <label class="block text-sm font-medium text-zinc-400 mb-2">Repository URL (optional)</label>
+                <label class="block text-xs sm:text-sm font-medium text-zinc-400 mb-2">Repository URL (optional)</label>
                 <input type="text" name="repository" placeholder="https://github.com/you/my-zorb"
-                       class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-2xl px-6 py-4 text-lg outline-none">
+                       class="w-full bg-black border border-zinc-700 focus:border-cyan-400 rounded-xl sm:rounded-2xl px-5 sm:px-6 py-3 sm:py-4 text-base sm:text-lg outline-none">
             </div>
             <div>
-                <label class="block text-sm font-medium text-zinc-400 mb-3">Zorb File (.zorb or .tar.gz)</label>
+                <label class="block text-xs sm:text-sm font-medium text-zinc-400 mb-2">Zorb File (.zorb or .tar.gz)</label>
                 <div id="drop-zone"
-                     class="drop-zone border-2 border-dashed border-zinc-700 hover:border-cyan-400 rounded-3xl p-12 text-center cursor-pointer"
+                     class="drop-zone border-2 border-dashed border-zinc-700 hover:border-cyan-400 rounded-2xl sm:rounded-3xl p-8 sm:p-12 text-center cursor-pointer"
                      onclick="document.getElementById('file').click()">
-                    <i class="fa-solid fa-cloud-upload-alt text-6xl text-cyan-400 mb-4"></i>
-                    <p class="text-lg">Drag & drop your .zorb file here</p>
-                    <p class="text-sm text-zinc-500 mt-2">or click to browse</p>
+                    <i class="fa-solid fa-cloud-upload-alt text-4xl sm:text-6xl text-cyan-400 mb-3 sm:mb-4"></i>
+                    <p class="text-base sm:text-lg">Drag & drop your .zorb file here</p>
+                    <p class="text-xs sm:text-sm text-zinc-500 mt-2">or click to browse</p>
                     <input type="file" id="file" name="file" accept=".zorb,.tar.gz" class="hidden">
                 </div>
             </div>
             <button type="submit"
-                    class="w-full bg-cyan-400 hover:bg-cyan-300 text-black font-bold py-6 rounded-3xl text-xl transition-all flex items-center justify-center gap-3">
+                    class="w-full bg-cyan-400 hover:bg-cyan-300 text-black font-bold py-5 sm:py-6 rounded-2xl sm:rounded-3xl text-lg sm:text-xl transition-all flex items-center justify-center gap-3">
                 <i class="fa-solid fa-rocket"></i>
                 Publish to zorbs.io
             </button>
         </form>
-        <div id="publish-result" class="mt-8"></div>
+        <div id="publish-result" class="mt-6 sm:mt-8"></div>
     </div>
-    <footer class="border-t border-zinc-800 py-12 text-center text-zinc-500 text-sm mt-20">
+    <footer class="border-t border-zinc-800 py-8 sm:py-12 text-center text-zinc-500 text-xs sm:text-sm mt-14 sm:mt-20 px-4">
         Powered by The Zeta Foundation • © 2026 zorbs.io
     </footer>
 
@@ -122,6 +134,15 @@
     </div>
 
     <script>
+        // Mobile nav toggle
+        document.getElementById('nav-toggle')?.addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            const icon = this.querySelector('i');
+            menu.classList.toggle('hidden');
+            icon.classList.toggle('fa-bars');
+            icon.classList.toggle('fa-times');
+        });
+
         function openLoginModal() {
             document.getElementById('login-modal').classList.remove('hidden');
             document.getElementById('login-modal').classList.add('flex');

@@ -170,7 +170,7 @@ async fn render_detail(auth_session: AuthSession<UserBackend>, name: String, sta
 
     // dynamic nav with Passkey-ready modal trigger
     let user = &auth_session.user;
-    let auth_html = if let Some(user) = user {
+    let auth_markup = if let Some(user) = user {
         html! {
             div class="flex items-center gap-6" {
                 span class="text-sm font-medium text-zinc-300" { "@" (user.username) }
@@ -187,8 +187,12 @@ async fn render_detail(auth_session: AuthSession<UserBackend>, name: String, sta
             }
         }
     };
+    let auth_str = auth_markup.into_string();
     if let Some(pos) = page.find("<!-- AUTH_SLOT -->") {
-        page.replace_range(pos..pos + "<!-- AUTH_SLOT -->".len(), &auth_html.into_string());
+        page.replace_range(pos..pos + "<!-- AUTH_SLOT -->".len(), &auth_str);
+    }
+    if let Some(pos) = page.find("<!-- AUTH_SLOT_MOBILE -->") {
+        page.replace_range(pos..pos + "<!-- AUTH_SLOT_MOBILE -->".len(), &auth_str);
     }
 
     html! { (PreEscaped(page)) }

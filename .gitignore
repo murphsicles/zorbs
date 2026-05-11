@@ -19,3 +19,4 @@ debug
 **/*.rs.bk
 *.pdb
 **/mutants.out*/
+start_dev.sh

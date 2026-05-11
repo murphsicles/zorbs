@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
+        .text-sm { font-size: 1.0rem; }
         body { background: linear-gradient(180deg, #0a0a0a 0%, #111111 100%); }
         .hero-glow { text-shadow: 0 0 40px rgb(34 211 238); }
         .zorb-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -16,56 +17,66 @@
 </head>
 <body class="text-white min-h-screen">
     <nav class="border-b border-zinc-800 bg-black/90 backdrop-blur-lg fixed w-full z-50">
-        <div class="max-w-screen-2xl mx-auto px-8 py-5 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <span class="text-4xl font-black tracking-tighter text-cyan-400">Z</span>
-                <span class="text-3xl font-semibold tracking-tighter">ORBS</span>
+        <div class="max-w-screen-2xl mx-auto px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <img src="/assets/128.png" alt="ZORBS" style="height: 3rem;" class="h-8 sm:h-12">
             </div>
-            <div class="flex items-center gap-10 text-sm font-medium">
+            <button id="nav-toggle" class="sm:hidden text-2xl text-zinc-400 hover:text-white transition-colors" aria-label="Toggle navigation">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div id="nav-links" class="hidden sm:flex items-center gap-4 md:gap-10 text-sm font-medium">
                 <a href="/" class="hover:text-cyan-400 transition-colors">Discover</a>
                 <a href="/publish" class="hover:text-cyan-400 transition-colors">Publish</a>
                 <a href="#" class="hover:text-cyan-400 transition-colors">Docs</a>
-                <a href="#" class="hover:text-cyan-400 transition-colors">Blog</a>
             </div>
             <!-- AUTH_SLOT -->
         </div>
+        <!-- Mobile menu dropdown -->
+        <div id="mobile-menu" class="hidden sm:hidden border-t border-zinc-800 bg-black/95 backdrop-blur-lg">
+            <div class="px-4 py-4 flex flex-col gap-4 text-sm font-medium">
+                <a href="/" class="hover:text-cyan-400 transition-colors py-2">Discover</a>
+                <a href="/publish" class="hover:text-cyan-400 transition-colors py-2">Publish</a>
+                <a href="#" class="hover:text-cyan-400 transition-colors py-2">Docs</a>
+                <!-- AUTH_SLOT_MOBILE -->
+            </div>
+        </div>
     </nav>
-    <div class="pt-28 pb-20">
-        <div class="max-w-screen-2xl mx-auto px-8 text-center">
-            <h1 class="text-8xl font-black tracking-tighter hero-glow">ZORBS</h1>
-            <p class="text-4xl mt-4 text-zinc-300">Build. Release. Share.</p>
-            <p class="mt-8 text-xl text-zinc-400 max-w-3xl mx-auto">
+    <div class="pt-24 sm:pt-28 pb-20">
+        <div class="max-w-screen-2xl mx-auto px-4 sm:px-8 text-center">
+            <h1 class="text-5xl sm:text-6xl md:text-8xl font-black tracking-tighter hero-glow">ZORBS</h1>
+            <p class="text-2xl sm:text-3xl md:text-4xl mt-3 sm:mt-4 text-zinc-300">Build. Release. Share.</p>
+            <p class="mt-6 sm:mt-8 text-base sm:text-lg md:text-xl text-zinc-400 max-w-3xl mx-auto px-2">
                 The official package registry for Zeta.
             </p>
-            <div class="max-w-3xl mx-auto mt-16">
+            <div class="max-w-3xl mx-auto mt-10 sm:mt-16">
                 <div class="relative">
                     <input
                         id="search-input"
                         name="q"
                         type="text"
-                        placeholder="Search zorbs... (e.g. async runtime, http server, json parser)"
-                        class="w-full bg-zinc-900 border border-zinc-700 focus:border-cyan-500 rounded-3xl px-8 py-7 text-lg outline-none transition-all"
+                        placeholder="Search zorbs..."
+                        class="w-full bg-zinc-900 border border-zinc-700 focus:border-cyan-500 rounded-3xl px-6 sm:px-8 py-5 sm:py-7 text-base sm:text-lg outline-none transition-all placeholder:text-sm sm:placeholder:text-base"
                         hx-get="/api/search"
                         hx-trigger="keyup changed delay:250ms"
                         hx-target="#search-results"
                         hx-indicator="#search-loading">
-                    <div id="search-loading" class="htmx-indicator absolute right-8 top-1/2 -translate-y-1/2 text-cyan-400">
+                    <div id="search-loading" class="htmx-indicator absolute right-6 sm:right-8 top-1/2 -translate-y-1/2 text-cyan-400">
                         <i class="fa-solid fa-spinner fa-spin"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div id="search-results" class="max-w-screen-2xl mx-auto px-8 mt-12"></div>
-        <div class="max-w-screen-2xl mx-auto px-8 mt-20">
-            <h2 class="text-3xl font-semibold mb-10 flex items-center gap-3">
+        <div id="search-results" class="max-w-screen-2xl mx-auto px-4 sm:px-8 mt-8 sm:mt-12"></div>
+        <div class="max-w-screen-2xl mx-auto px-4 sm:px-8 mt-14 sm:mt-20">
+            <h2 class="text-xl sm:text-3xl font-semibold mb-6 sm:mb-10 flex items-center gap-2 sm:gap-3">
                 <span class="text-cyan-400">🔥</span> Trending this week
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 auto-rows-fr">
                 <!-- TRENDING_CARDS -->
             </div>
         </div>
     </div>
-    <footer class="border-t border-zinc-800 py-12 text-center text-zinc-500 text-sm">
+    <footer class="border-t border-zinc-800 py-8 sm:py-12 text-center text-zinc-500 text-xs sm:text-sm px-4">
         Powered by The Zeta Foundation • © 2026 zorbs.io
     </footer>
 
@@ -99,6 +110,15 @@
     </div>
 
     <script>
+        // Mobile nav toggle
+        document.getElementById('nav-toggle')?.addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            const icon = this.querySelector('i');
+            menu.classList.toggle('hidden');
+            icon.classList.toggle('fa-bars');
+            icon.classList.toggle('fa-times');
+        });
+
         function openLoginModal() {
             document.getElementById('login-modal').classList.remove('hidden');
             document.getElementById('login-modal').classList.add('flex');

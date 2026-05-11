@@ -19,7 +19,7 @@ pub async fn publish_page(auth_session: AuthSession<UserBackend>) -> Markup {
     let mut html_str = views::PUBLISH_HTML.to_string();
     // dynamic nav with Passkey-ready modal trigger
     let user = &auth_session.user;
-    let auth_html = if let Some(user) = user {
+    let auth_markup = if let Some(user) = user {
         html! {
             div class="flex items-center gap-6" {
                 span class="text-sm font-medium text-zinc-300" { "@" (user.username) }
@@ -36,8 +36,12 @@ pub async fn publish_page(auth_session: AuthSession<UserBackend>) -> Markup {
             }
         }
     };
+    let auth_str = auth_markup.into_string();
     if let Some(pos) = html_str.find("<!-- AUTH_SLOT -->") {
-        html_str.replace_range(pos..pos + "<!-- AUTH_SLOT -->".len(), &auth_html.into_string());
+        html_str.replace_range(pos..pos + "<!-- AUTH_SLOT -->".len(), &auth_str);
+    }
+    if let Some(pos) = html_str.find("<!-- AUTH_SLOT_MOBILE -->") {
+        html_str.replace_range(pos..pos + "<!-- AUTH_SLOT_MOBILE -->".len(), &auth_str);
     }
     html! { (PreEscaped(html_str)) }
 }
