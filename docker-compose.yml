@@ -8,6 +8,13 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
 
   zorbs:
     build: .
@@ -22,6 +29,13 @@ services:
       - ./uploads:/uploads
     depends_on:
       - db
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
 
   nginx:
     image: nginx:alpine
@@ -35,6 +49,13 @@ services:
       - ./assets:/app/assets:ro
     depends_on:
       - zorbs
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.3'
+        reservations:
+          memory: 64M
 
 volumes:
   postgres_data:
