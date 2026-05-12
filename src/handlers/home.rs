@@ -62,14 +62,14 @@ pub async fn homepage(auth_session: AuthSession<UserBackend>, State(state): Stat
             stars.to_string()
         };
         format!(
-            r##"<a href="{href}" class="block">
-                <div class="zorb-card bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
-                    <div class="flex justify-between items-start">
+            r##"<a href="{href}" class="block h-full">
+                <div class="zorb-card bg-zinc-900 border border-zinc-800 rounded-3xl p-8 h-full flex flex-col">
+                    <div class="flex-1 flex justify-between items-start">
                         <div>
                             <span class="font-mono text-cyan-400">{name}</span>
                             <p class="text-zinc-400 mt-2 text-sm">{desc}</p>
                         </div>
-                        <span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full">v{version}</span>
+                        <span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full whitespace-nowrap">v{version}</span>
                     </div>
                     <div class="mt-8 text-xs text-zinc-500 flex gap-6">
                         <span>↓ {downloads}</span>
@@ -100,14 +100,14 @@ pub async fn search_zorbs(Query(params): Query<SearchParams>, State(state): Stat
     html! {
         div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" {
             @for zorb in &zorbs {
-                a href=(format!("/{}", zorb.name)) class="block" {
-                    div class="zorb-card bg-zinc-900 border border-zinc-800 rounded-3xl p-8" {
-                        div class="flex justify-between items-start" {
+                a href=(format!("/{}", zorb.name)) class="block h-full" {
+                    div class="zorb-card bg-zinc-900 border border-zinc-800 rounded-3xl p-8 h-full flex flex-col" {
+                        div class="flex-1 flex justify-between items-start" {
                             div {
                                 span class="font-mono text-cyan-400" { (zorb.name) }
                                 p class="text-zinc-400 mt-2 text-sm" { (zorb.description.clone().unwrap_or_else(|| "No description".to_string())) }
                             }
-                            span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full" { (zorb.version) }
+                            span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full whitespace-nowrap" { (zorb.version) }
                         }
                         div class="mt-8 text-xs text-zinc-500 flex gap-6" {
                             span { "↓ " (zorb.downloads) }
