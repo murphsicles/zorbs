@@ -17,7 +17,8 @@ const RESERVED_SCOPES: &[&str] = &[
     "bitbucket", "adobe", "uber", "airbnb", "lyft", "samsung", "sony", "grok", "bitcoin",
     "btc", "bch", "bsv", "xrp", "sol", "solana", "bags", "bagsapp", "bagged", "crypto",
     "spacex", "nasa", "gov", "cia", "m15", "mi6", "gchq", "mod", "royal", "hrh",
-    "core", "async", "http", "web", "db", "log", "cli",
+    // Roy Murphy / murphsicles GitHub owner — standard library packages
+    // removed: core, async, http, web, db, log, cli
     "crypto", "net", "math", "test", "sys", "fmt", "util",
     "config", "time", "random",
 ];
