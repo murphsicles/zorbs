@@ -94,14 +94,7 @@ pub async fn publish_zorb(State(state): State<Arc<AppState>>, mut multipart: Mul
     let id = uuid::Uuid::new_v4();
     let _ = sqlx::query!(
         "INSERT INTO zorbs (id, name, version, description, license, repository, downloads, created_at, updated_at, dependencies, readme)
-         VALUES ($1, $2, $3, $4, $5, $6, 0, NOW(), NOW(), $7, $8)
-         ON CONFLICT (name, version) DO UPDATE SET
-            description = EXCLUDED.description,
-            license = EXCLUDED.license,
-            repository = EXCLUDED.repository,
-            dependencies = EXCLUDED.dependencies,
-            readme = EXCLUDED.readme,
-            updated_at = NOW()",
+         VALUES ($1, $2, $3, $4, $5, $6, 0, NOW(), NOW(), $7, $8)",
         id,
         new_zorb.name,
         new_zorb.version,
