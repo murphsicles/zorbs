@@ -20,3 +20,11 @@ seed-vps:
 	@echo "==> Seeding VPS database"
 	@ssh zorbs "docker exec -i zorbs-db-1 psql -U zorbs -d zorbs" < seeds/001_stdlib_packages.sql
 	@echo "==> VPS seed complete"
+
+.PHONY: test
+test: ## Run all integration tests (serial to avoid shared-DB races)
+	DATABASE_URL=postgres://zorbs:zorbs_dev@localhost:5432/zorbs cargo test -- --test-threads=1
+
+.PHONY: test-verbose
+test-verbose: ## Run tests with full output
+	DATABASE_URL=postgres://zorbs:zorbs_dev@localhost:5432/zorbs cargo test -- --test-threads=1 --nocapture

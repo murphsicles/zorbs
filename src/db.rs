@@ -44,7 +44,13 @@ pub mod queries {
     use crate::models::Zorb;
 
     pub async fn list_zorbs(pool: &PgPool) -> Vec<Zorb> {
-        sqlx::query_as("SELECT id, name, version, description, license, repository, downloads, created_at, updated_at, owner_id, dependencies, readme FROM zorbs ORDER BY downloads DESC LIMIT 12")
+        // Latest version of each package ordered by downloads for trending
+        sqlx::query_as(
+            "SELECT id, name, version, description, license, repository, downloads, \
+             created_at, updated_at, owner_id, dependencies, readme \
+             FROM (SELECT DISTINCT ON (name) * FROM zorbs ORDER BY name, created_at DESC) \
+             AS latest ORDER BY downloads DESC, name ASC LIMIT 12"
+        )
             .fetch_all(pool)
             .await
             .unwrap_or_default()

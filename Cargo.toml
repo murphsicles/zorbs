@@ -44,6 +44,10 @@ serde_cbor_2 = "0.13"
 # This bundles OpenSSL so cross/musl builds without system libs
 openssl-sys = { version = "0.9", features = ["vendored"] }
 
+[dev-dependencies]
+tower = "0.5"
+http-body-util = "0.1"
+
 [[bin]]
 name = "zorbs"
 path = "src/main.rs"
