@@ -5,3 +5,4 @@ pub mod download;
 pub mod home;
 pub mod publish;
 pub mod resolve;
+pub mod docs;
