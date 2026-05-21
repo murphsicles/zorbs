@@ -99,37 +99,38 @@ impl S3Storage {
         // Simple AWS SigV4 signing for S3 PUT
         let content_sha256 = sha256_hex(data);
         let signed_headers = "host;x-amz-content-sha256;x-amz-date";
-        let credential_scope = format!("{}/auto/s3/aws4_request", date);
+        let region = std::env::var("R2_REGION").unwrap_or_else(|_| "auto".to_string());
+        let credential_scope = format!("{}/{}/s3/aws4_request", date, region);
+
+        // AWS SigV4 canonical request: path-style S3 (MinIO)
+        // Format: VERB + "\n" + CanonicalURI + "\n" + CanonicalQuery + "\n" + CanonicalHeaders + "\n" + SignedHeaders + "\n" + HashedPayload
+        let host_header = &self.endpoint;
+        let canonical_uri = format!("/{}/{}", self.bucket, key);
+        let canonical_headers = format!(
+            "host:{}\nx-amz-content-sha256:{}\nx-amz-date:{}\n",
+            host_header, content_sha256, datetime,
+        );
+        let canonical_request = format!(
+            "PUT\n{}\n\n{}\n{}\n{}",
+            canonical_uri,
+            canonical_headers,
+            signed_headers,
+            content_sha256,
+        );
+        let hashed_cr = sha256_hex(canonical_request.as_bytes());
 
         // StringToSign
         let algorithm = "AWS4-HMAC-SHA256";
-        let canonical_request = format!(
-            "PUT\n/{}/{}\n\nhost:{}.{}\nx-amz-content-sha256:{}\nx-amz-date:{}\n\n{}\n{}",
-            self.bucket, key,
-            self.bucket, self.endpoint,
-            content_sha256, datetime,
-            signed_headers, content_sha256,
-        );
-        let hashed_cr = sha256_hex(canonical_request.as_bytes());
         let string_to_sign = format!(
             "{}\n{}\n{}\n{}",
             algorithm, datetime, credential_scope, hashed_cr,
         );
 
-        // Signing key
-        let signing_key = hmac_sha256(
-            &hmac_sha256(
-                &hmac_sha256(
-                    &hmac_sha256(
-                        format!("AWS4{}", self.secret_key).as_bytes(),
-                        &date.as_bytes(),
-                    ),
-                    b"s3",
-                ),
-                b"aws4_request",
-            ),
-            b"aws4_request",
-        );
+        // Signing key: HMAC-SHA256(HMAC-SHA256(HMAC-SHA256(HMAC-SHA256("AWS4"+SecretKey, date), region), service), "aws4_request")
+        let date_key = hmac_sha256(format!("AWS4{}", self.secret_key).as_bytes(), date.as_bytes());
+        let region_key = hmac_sha256(&date_key, region.as_bytes());
+        let service_key = hmac_sha256(&region_key, b"s3");
+        let signing_key = hmac_sha256(&service_key, b"aws4_request");
 
         let signature = hex_lower(&hmac_sha256(&signing_key, string_to_sign.as_bytes()));
 
@@ -141,10 +142,7 @@ impl S3Storage {
         let client = reqwest::Client::new();
         let resp = client
             .put(&url)
-            // For virtual-hosted style: {bucket}.{endpoint}
-            // For path-style: {endpoint}
-            // MinIO uses path-style by default
-            .header("Host", &self.endpoint)
+            .header("Host", host_header)
             .header("x-amz-content-sha256", &content_sha256)
             .header("x-amz-date", &datetime)
             .header("Authorization", &authorization)
