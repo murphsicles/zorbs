@@ -149,18 +149,22 @@ async fn render_detail(auth_session: AuthSession<UserBackend>, name: String, sta
         let mut cards = Vec::new();
         for (dep_name, version_req) in &dep_map {
             let dep_info = queries::get_latest_zorb(&state.db, dep_name).await;
+            let dep_version = dep_info.as_ref()
+                .map(|d| &d.version)
+                .map(|v| v.as_str())
+                .unwrap_or(version_req.as_str());
             let desc = dep_info.as_ref()
                 .and_then(|d| d.description.as_deref())
                 .unwrap_or("Zeta package");
             let href = format!("/{}", dep_name);
             cards.push(format!(
                 r##"<div class="bg-zinc-950 border border-zinc-700 rounded-2xl p-6">
-                    <a href="{href}" class="font-mono text-cyan-400 hover:text-cyan-300">{dep_name} {version_req}</a>
+                    <a href="{href}" class="font-mono text-cyan-400 hover:text-cyan-300">{dep_name} {dep_version}</a>
                     <p class="text-xs text-zinc-500 mt-1">{desc}</p>
                 </div>"##,
                 href = href,
                 dep_name = dep_name,
-                version_req = version_req,
+                dep_version = dep_version,
                 desc = desc,
             ));
         }
