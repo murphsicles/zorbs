@@ -16,6 +16,30 @@ services:
         reservations:
           memory: 256M
 
+  minio:
+    image: minio/minio:latest
+    restart: always
+    command: server /data --console-address ":9001"
+    expose:
+      - "9000"
+      - "9001"
+    environment:
+      MINIO_ROOT_USER: zorbs
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-zorbs_minio_2026}
+      MINIO_DOMAIN: zorbs.io
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
   zorbs:
     build: .
     restart: always
@@ -25,10 +49,15 @@ services:
       - .env
     environment:
       DATABASE_URL: postgres://zorbs:${POSTGRES_PASSWORD}@db:5432/zorbs
-    volumes:
-      - ./uploads:/uploads
+      STORAGE_BACKEND: s3
+      R2_BUCKET: zorbs
+      R2_ENDPOINT: minio:9000
+      R2_PUBLIC_URL: https://zorbs.io/r2/zorbs
+      R2_ACCESS_KEY_ID: zorbs
+      R2_SECRET_ACCESS_KEY: ${MINIO_PASSWORD:-zorbs_minio_2026}
     depends_on:
       - db
+      - minio
     deploy:
       resources:
         limits:
@@ -59,3 +88,4 @@ services:
 
 volumes:
   postgres_data:
+  minio_data:
