@@ -3,6 +3,7 @@ use sqlx::PgPool;
 use std::sync::Arc;
 use crate::config;
 use crate::models::user::UserBackend;
+use crate::storage;
 use webauthn_rs::prelude::*;
 use url::Url;
 
@@ -11,6 +12,7 @@ pub struct AppState {
     pub db: PgPool,
     pub backend: UserBackend,
     pub webauthn: Arc<Webauthn>, // NEW for Passkeys
+    pub storage: Arc<storage::StorageBackend>,
 }
 
 pub fn new() -> Arc<AppState> {
@@ -27,5 +29,7 @@ pub fn new() -> Arc<AppState> {
             .expect("Failed to build Webauthn")
     );
 
-    Arc::new(AppState { db, backend, webauthn })
+    let storage = storage::from_env();
+
+    Arc::new(AppState { db, backend, webauthn, storage })
 }

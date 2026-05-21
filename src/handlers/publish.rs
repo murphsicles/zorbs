@@ -10,6 +10,7 @@ use crate::models::NewZorb;
 use crate::utils;
 use crate::config;
 use crate::views;
+use crate::storage;
 use crate::models::user::UserBackend;
 
 pub async fn publish_page(auth_session: AuthSession<UserBackend>) -> Markup {
@@ -88,9 +89,9 @@ pub async fn publish_zorb(State(state): State<Arc<AppState>>, mut multipart: Mul
         }
     };
     let filename = utils::zorb_filename(&new_zorb.name, &new_zorb.version);
-    let upload_path = format!("{}/{}", config::upload_dir(), filename);
-    fs::create_dir_all(&config::upload_dir()).await.unwrap();
-    fs::write(&upload_path, &file_bytes_vec).await.unwrap();
+    // Store package bytes via storage backend (local FS or S3/R2)
+    state.storage.store(&filename, &file_bytes_vec).await
+        .unwrap_or_else(|e| panic!("Failed to store {}: {}", filename, e));
     let id = uuid::Uuid::new_v4();
     let _ = sqlx::query!(
         "INSERT INTO zorbs (id, name, version, description, license, repository, downloads, created_at, updated_at, dependencies, readme)

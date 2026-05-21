@@ -9,6 +9,7 @@ pub mod routes;
 pub mod state;
 pub mod utils;
 pub mod views;
+pub mod storage;
 
 use axum::Router;
 use std::sync::Arc;

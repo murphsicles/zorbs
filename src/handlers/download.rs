@@ -2,43 +2,41 @@
 use axum::{
     extract::{Path, State},
     http::{header, StatusCode},
-    response::IntoResponse,
+    response::{IntoResponse, Redirect},
 };
 use std::sync::Arc;
-use tokio::fs;
 use crate::state::AppState;
-use crate::config;
 use crate::utils;
 
+/// Redirect to the package download URL (S3/R2 or local path).
+/// Increments the download counter.
 async fn serve_file(name: String, version: String, state: Arc<AppState>) -> impl IntoResponse {
     let filename = utils::zorb_filename(&name, &version);
-    let upload_path = format!("{}/{}", config::upload_dir(), filename);
-    if !fs::try_exists(&upload_path).await.unwrap_or(false) {
-        return (StatusCode::NOT_FOUND, "Zorb not found").into_response();
-    }
-        let _ = sqlx::query!(
+
+    // Increment download counter
+    let _ = sqlx::query!(
         "UPDATE zorbs SET downloads = downloads + 1 WHERE name = $1 AND version = $2",
         name,
         version
     )
     .execute(&state.db)
     .await;
-    match fs::read(&upload_path).await {
-        Ok(bytes) => {
-            let mut headers = header::HeaderMap::new();
-            headers.insert(
-                header::CONTENT_TYPE,
-                "application/octet-stream".parse().unwrap(),
-            );
-            headers.insert(
-                header::CONTENT_DISPOSITION,
-                format!("attachment; filename=\"{}\"", filename)
-                    .parse()
-                    .unwrap(),
-            );
-            (headers, bytes).into_response()
-        }
-        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to read zorb file").into_response(),
+
+    let url = state.storage.download_url(&filename);
+
+    // If storage backend is S3/R2, redirect to the public URL.
+    // If local, proxy through nginx (local URL).
+    // For local storage the URL is relative (nginx-served), use a redirect.
+    if url.starts_with('/') {
+        // Local storage — redirect to nginx-served path
+        Redirect::to(&url).into_response()
+    } else {
+        // S3/R2 — redirect to the public URL
+        let headers = axum::http::HeaderMap::from_iter([(
+            header::LOCATION,
+            url.parse().unwrap(),
+        )]);
+        (StatusCode::FOUND, headers).into_response()
     }
 }
 
