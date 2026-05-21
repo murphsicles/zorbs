@@ -71,12 +71,13 @@ pub struct S3Storage {
     public_url_base: String,
     access_key: String,
     secret_key: String,
+    use_ssl: bool,
 }
 
 impl S3Storage {
     pub fn new(
         bucket: &str, endpoint: &str, public_url_base: &str,
-        access_key: &str, secret_key: &str,
+        access_key: &str, secret_key: &str, use_ssl: bool,
     ) -> Self {
         Self {
             bucket: bucket.to_string(),
@@ -84,12 +85,14 @@ impl S3Storage {
             public_url_base: public_url_base.to_string(),
             access_key: access_key.to_string(),
             secret_key: secret_key.to_string(),
+            use_ssl,
         }
     }
 
     /// S3 PUT object using direct HTTP PUT with AWS Signature V4 signing.
     async fn store(&self, key: &str, data: &[u8]) -> Result<(), String> {
-        let url = format!("https://{}/{}/{}", self.endpoint, self.bucket, key);
+        let scheme = if self.use_ssl { "https" } else { "http" };
+        let url = format!("{}://{}/{}/{}", scheme, self.endpoint, self.bucket, key);
         let date = chrono::Utc::now().format("%Y%m%d").to_string();
         let datetime = chrono::Utc::now().format("%Y%m%dT%H%M%SZ").to_string();
 
@@ -138,7 +141,10 @@ impl S3Storage {
         let client = reqwest::Client::new();
         let resp = client
             .put(&url)
-            .header("Host", format!("{}.{}", self.bucket, self.endpoint))
+            // For virtual-hosted style: {bucket}.{endpoint}
+            // For path-style: {endpoint}
+            // MinIO uses path-style by default
+            .header("Host", &self.endpoint)
             .header("x-amz-content-sha256", &content_sha256)
             .header("x-amz-date", &datetime)
             .header("Authorization", &authorization)
@@ -176,7 +182,10 @@ pub fn from_env() -> Arc<StorageBackend> {
         .unwrap_or_default();
 
     if !bucket.is_empty() && !access_key.is_empty() {
-        let storage = S3Storage::new(&bucket, &endpoint, &public_url, &access_key, &secret_key);
+        let use_ssl = std::env::var("R2_USE_SSL")
+            .unwrap_or_else(|_| "true".to_string())
+            .to_lowercase() == "true";
+        let storage = S3Storage::new(&bucket, &endpoint, &public_url, &access_key, &secret_key, use_ssl);
         tracing::info!("Storage: S3-compatible ({})", endpoint);
         Arc::new(StorageBackend::S3(storage))
     } else {
