@@ -109,37 +109,86 @@ zorb add @data/serde --vers 1.0</code></pre>
                 <table>
                     <thead>
                         <tr>
-                            <th>Namespace</th>
-                            <th>Packages</th>
-                            <th>Repository</th>
+                            <th>Package</th>
+                            <th>GitHub</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td><code>@async</code></td><td>tokio, futures, futures-core, futures-util, tokio-util</td><td><a href="https://github.com/murphsicles/tokio">murphsicles/tokio</a></td></tr>
-                        <tr><td><code>@bench</code></td><td>testicles</td><td><a href="https://github.com/murphsicles/testicles">murphsicles/testicles</a></td></tr>
-                        <tr><td><code>@cli</code></td><td>clap, clap_builder</td><td><a href="https://github.com/murphsicles/clap">murphsicles/clap</a></td></tr>
-                        <tr><td><code>@collections</code></td><td>hashbrown, indexmap, smallvec</td><td><a href="https://github.com/murphsicles/hashbrown">murphsicles/hashbrown</a></td></tr>
-                        <tr><td><code>@core</code></td><td>once_cell</td><td><a href="https://github.com/murphsicles/once_cell">murphsicles/once_cell</a></td></tr>
-                        <tr><td><code>@crypto</code></td><td>nour, bsv58, bitcoin-hashes, murmur3, rand, rand_core, ring, ripemd, secp256k1</td><td><a href="https://github.com/murphsicles/bitcoin-hashes">murphsicles/bitcoin-hashes</a></td></tr>
-                        <tr><td><code>@data</code></td><td>serde, hex, linked-hash-map, snowflake</td><td><a href="https://github.com/murphsicles/serde">murphsicles/serde</a></td></tr>
-                        <tr><td><code>@db</code></td><td>zenith</td><td><a href="https://github.com/murphsicles/zenith">murphsicles/zenith</a></td></tr>
-                        <tr><td><code>@encoding</code></td><td>base64, csv, serde_json, toml</td><td><a href="https://github.com/murphsicles/base64">murphsicles/base64</a></td></tr>
-                        <tr><td><code>@ffi</code></td><td>libc</td><td><a href="https://github.com/murphsicles/libc">murphsicles/libc</a></td></tr>
-                        <tr><td><code>@fs</code></td><td>walkdir</td><td><a href="https://github.com/murphsicles/walkdir">murphsicles/walkdir</a></td></tr>
-                        <tr><td><code>@http</code></td><td>axum</td><td><a href="https://github.com/murphsicles/axum">murphsicles/axum</a></td></tr>
-                        <tr><td><code>@io</code></td><td>byteorder, flate2</td><td><a href="https://github.com/murphsicles/byteorder">murphsicles/byteorder</a></td></tr>
-                        <tr><td><code>@log</code></td><td>tracing</td><td><a href="https://github.com/murphsicles/tracing">murphsicles/tracing</a></td></tr>
-                        <tr><td><code>@logging</code></td><td>env-logger</td><td><a href="https://github.com/murphsicles/env-logger">murphsicles/env-logger</a></td></tr>
-                        <tr><td><code>@math</code></td><td>num-bigint, num-traits</td><td><a href="https://github.com/murphsicles/num-bigint">murphsicles/num-bigint</a></td></tr>
-                        <tr><td><code>@net</code></td><td>hyper, http, http-body, mime, reqwest, socket2, tower, url, dns-lookup</td><td><a href="https://github.com/murphsicles/hyper">murphsicles/hyper</a></td></tr>
-                        <tr><td><code>@parallel</code></td><td>rayon, rayon-core</td><td><a href="https://github.com/murphsicles/rayon">murphsicles/rayon</a></td></tr>
-                        <tr><td><code>@parsing</code></td><td>nom</td><td><a href="https://github.com/murphsicles/nom">murphsicles/nom</a></td></tr>
-                        <tr><td><code>@std</code></td><td>anyhow, bitflags, cfg-if, itertools, lazy_static, log, memchr, thiserror, uuid</td><td><a href="https://github.com/murphsicles/std">murphsicles/std</a></td></tr>
-                        <tr><td><code>@stdlib</code></td><td>regex, regex-automata, regex-syntax</td><td><a href="https://github.com/murphsicles/regex">murphsicles/regex</a></td></tr>
-                        <tr><td><code>@sync</code></td><td>crossbeam, parking_lot</td><td><a href="https://github.com/murphsicles/crossbeam">murphsicles/crossbeam</a></td></tr>
-                        <tr><td><code>@sys</code></td><td>getrandom, signal-hook</td><td><a href="https://github.com/murphsicles/getrandom">murphsicles/getrandom</a></td></tr>
-                        <tr><td><code>@text</code></td><td>unicode-width</td><td><a href="https://github.com/murphsicles/unicode-width">murphsicles/unicode-width</a></td></tr>
-                        <tr><td><code>@time</code></td><td>chrono, time</td><td><a href="https://github.com/murphsicles/chrono">murphsicles/chrono</a></td></tr>
+                        <tr><td><code>@async/futures</code></td><td><a href="https://github.com/murphsicles/futures">murphsicles/futures</a></td></tr>
+                        <tr><td><code>@async/futures-core</code></td><td><a href="https://github.com/murphsicles/futures-core">murphsicles/futures-core</a></td></tr>
+                        <tr><td><code>@async/futures-util</code></td><td><a href="https://github.com/murphsicles/futures-util">murphsicles/futures-util</a></td></tr>
+                        <tr><td><code>@async/tokio</code></td><td><a href="https://github.com/murphsicles/tokio">murphsicles/tokio</a></td></tr>
+                        <tr><td><code>@async/tokio-util</code></td><td><a href="https://github.com/murphsicles/tokio-util">murphsicles/tokio-util</a></td></tr>
+                        <tr><td><code>@bench/testicles</code></td><td><a href="https://github.com/murphsicles/testicles">murphsicles/testicles</a></td></tr>
+                        <tr><td><code>@cli/clap</code></td><td><a href="https://github.com/murphsicles/clap">murphsicles/clap</a></td></tr>
+                        <tr><td><code>@cli/clap_builder</code></td><td><a href="https://github.com/murphsicles/clap_builder">murphsicles/clap_builder</a></td></tr>
+                        <tr><td><code>@collections/hashbrown</code></td><td><a href="https://github.com/murphsicles/hashbrown">murphsicles/hashbrown</a></td></tr>
+                        <tr><td><code>@collections/indexmap</code></td><td><a href="https://github.com/murphsicles/indexmap">murphsicles/indexmap</a></td></tr>
+                        <tr><td><code>@collections/smallvec</code></td><td><a href="https://github.com/murphsicles/smallvec">murphsicles/smallvec</a></td></tr>
+                        <tr><td><code>@compress/zstd</code></td><td><a href="https://github.com/murphsicles/zstd">murphsicles/zstd</a></td></tr>
+                        <tr><td><code>@core/once_cell</code></td><td><a href="https://github.com/murphsicles/once_cell">murphsicles/once_cell</a></td></tr>
+                        <tr><td><code>@crypto/bitcoin-hashes</code></td><td><a href="https://github.com/murphsicles/bitcoin-hashes">murphsicles/bitcoin-hashes</a></td></tr>
+                        <tr><td><code>@crypto/bsv58</code></td><td><a href="https://github.com/murphsicles/bsv58">murphsicles/bsv58</a></td></tr>
+                        <tr><td><code>@crypto/murmur3</code></td><td><a href="https://github.com/murphsicles/murmur3">murphsicles/murmur3</a></td></tr>
+                        <tr><td><code>@crypto/nour</code></td><td><a href="https://github.com/murphsicles/nour">murphsicles/nour</a></td></tr>
+                        <tr><td><code>@crypto/rand</code></td><td><a href="https://github.com/murphsicles/rand">murphsicles/rand</a></td></tr>
+                        <tr><td><code>@crypto/rand_core</code></td><td><a href="https://github.com/murphsicles/rand_core">murphsicles/rand_core</a></td></tr>
+                        <tr><td><code>@crypto/ring</code></td><td><a href="https://github.com/murphsicles/ring">murphsicles/ring</a></td></tr>
+                        <tr><td><code>@crypto/ripemd</code></td><td><a href="https://github.com/murphsicles/ripemd">murphsicles/ripemd</a></td></tr>
+                        <tr><td><code>@crypto/secp256k1</code></td><td><a href="https://github.com/murphsicles/secp256k1">murphsicles/secp256k1</a></td></tr>
+                        <tr><td><code>@crypto/ztls</code></td><td><a href="https://github.com/murphsicles/ztls">murphsicles/ztls</a></td></tr>
+                        <tr><td><code>@data/hex</code></td><td><a href="https://github.com/murphsicles/hex">murphsicles/hex</a></td></tr>
+                        <tr><td><code>@data/linked-hash-map</code></td><td><a href="https://github.com/murphsicles/linked-hash-map">murphsicles/linked-hash-map</a></td></tr>
+                        <tr><td><code>@data/serde</code></td><td><a href="https://github.com/murphsicles/serde">murphsicles/serde</a></td></tr>
+                        <tr><td><code>@data/snowflake</code></td><td><a href="https://github.com/murphsicles/snowflake">murphsicles/snowflake</a></td></tr>
+                        <tr><td><code>@db/zenith</code></td><td><a href="https://github.com/murphsicles/zenith">murphsicles/zenith</a></td></tr>
+                        <tr><td><code>@db/zsql</code></td><td><a href="https://github.com/murphsicles/zsql">murphsicles/zsql</a></td></tr>
+                        <tr><td><code>@encoding/base64</code></td><td><a href="https://github.com/murphsicles/base64">murphsicles/base64</a></td></tr>
+                        <tr><td><code>@encoding/bincode</code></td><td><a href="https://github.com/murphsicles/bincode">murphsicles/bincode</a></td></tr>
+                        <tr><td><code>@encoding/csv</code></td><td><a href="https://github.com/murphsicles/csv">murphsicles/csv</a></td></tr>
+                        <tr><td><code>@encoding/serde_json</code></td><td><a href="https://github.com/murphsicles/serde_json">murphsicles/serde_json</a></td></tr>
+                        <tr><td><code>@encoding/toml</code></td><td><a href="https://github.com/murphsicles/toml">murphsicles/toml</a></td></tr>
+                        <tr><td><code>@ffi/libc</code></td><td><a href="https://github.com/murphsicles/libc">murphsicles/libc</a></td></tr>
+                        <tr><td><code>@fs/walkdir</code></td><td><a href="https://github.com/murphsicles/walkdir">murphsicles/walkdir</a></td></tr>
+                        <tr><td><code>@http/axum</code></td><td><a href="https://github.com/murphsicles/axum">murphsicles/axum</a></td></tr>
+                        <tr><td><code>@io/byteorder</code></td><td><a href="https://github.com/murphsicles/byteorder">murphsicles/byteorder</a></td></tr>
+                        <tr><td><code>@io/flate2</code></td><td><a href="https://github.com/murphsicles/flate2">murphsicles/flate2</a></td></tr>
+                        <tr><td><code>@log/tracing</code></td><td><a href="https://github.com/murphsicles/tracing">murphsicles/tracing</a></td></tr>
+                        <tr><td><code>@logging/env-logger</code></td><td><a href="https://github.com/murphsicles/env-logger">murphsicles/env-logger</a></td></tr>
+                        <tr><td><code>@math/num-bigint</code></td><td><a href="https://github.com/murphsicles/num-bigint">murphsicles/num-bigint</a></td></tr>
+                        <tr><td><code>@math/num-traits</code></td><td><a href="https://github.com/murphsicles/num-traits">murphsicles/num-traits</a></td></tr>
+                        <tr><td><code>@net/dns-lookup</code></td><td><a href="https://github.com/murphsicles/dns-lookup">murphsicles/dns-lookup</a></td></tr>
+                        <tr><td><code>@net/http</code></td><td><a href="https://github.com/murphsicles/http">murphsicles/http</a></td></tr>
+                        <tr><td><code>@net/http-body</code></td><td><a href="https://github.com/murphsicles/http-body">murphsicles/http-body</a></td></tr>
+                        <tr><td><code>@net/hyper</code></td><td><a href="https://github.com/murphsicles/hyper">murphsicles/hyper</a></td></tr>
+                        <tr><td><code>@net/mime</code></td><td><a href="https://github.com/murphsicles/mime">murphsicles/mime</a></td></tr>
+                        <tr><td><code>@net/reqwest</code></td><td><a href="https://github.com/murphsicles/reqwest">murphsicles/reqwest</a></td></tr>
+                        <tr><td><code>@net/socket2</code></td><td><a href="https://github.com/murphsicles/socket2">murphsicles/socket2</a></td></tr>
+                        <tr><td><code>@net/tower</code></td><td><a href="https://github.com/murphsicles/tower">murphsicles/tower</a></td></tr>
+                        <tr><td><code>@net/url</code></td><td><a href="https://github.com/murphsicles/url">murphsicles/url</a></td></tr>
+                        <tr><td><code>@parallel/rayon</code></td><td><a href="https://github.com/murphsicles/rayon">murphsicles/rayon</a></td></tr>
+                        <tr><td><code>@parallel/rayon-core</code></td><td><a href="https://github.com/murphsicles/rayon-core">murphsicles/rayon-core</a></td></tr>
+                        <tr><td><code>@parsing/nom</code></td><td><a href="https://github.com/murphsicles/nom">murphsicles/nom</a></td></tr>
+                        <tr><td><code>@proto/prost</code></td><td><a href="https://github.com/murphsicles/prost">murphsicles/prost</a></td></tr>
+                        <tr><td><code>@std/anyhow</code></td><td><a href="https://github.com/murphsicles/anyhow">murphsicles/anyhow</a></td></tr>
+                        <tr><td><code>@std/bitflags</code></td><td><a href="https://github.com/murphsicles/bitflags">murphsicles/bitflags</a></td></tr>
+                        <tr><td><code>@std/cfg-if</code></td><td><a href="https://github.com/murphsicles/cfg-if">murphsicles/cfg-if</a></td></tr>
+                        <tr><td><code>@std/itertools</code></td><td><a href="https://github.com/murphsicles/itertools">murphsicles/itertools</a></td></tr>
+                        <tr><td><code>@std/lazy_static</code></td><td><a href="https://github.com/murphsicles/lazy_static">murphsicles/lazy_static</a></td></tr>
+                        <tr><td><code>@std/log</code></td><td><a href="https://github.com/murphsicles/log">murphsicles/log</a></td></tr>
+                        <tr><td><code>@std/memchr</code></td><td><a href="https://github.com/murphsicles/memchr">murphsicles/memchr</a></td></tr>
+                        <tr><td><code>@std/thiserror</code></td><td><a href="https://github.com/murphsicles/thiserror">murphsicles/thiserror</a></td></tr>
+                        <tr><td><code>@std/uuid</code></td><td><a href="https://github.com/murphsicles/uuid">murphsicles/uuid</a></td></tr>
+                        <tr><td><code>@stdlib/regex</code></td><td><a href="https://github.com/murphsicles/regex">murphsicles/regex</a></td></tr>
+                        <tr><td><code>@stdlib/regex-automata</code></td><td><a href="https://github.com/murphsicles/regex-automata">murphsicles/regex-automata</a></td></tr>
+                        <tr><td><code>@stdlib/regex-syntax</code></td><td><a href="https://github.com/murphsicles/regex-syntax">murphsicles/regex-syntax</a></td></tr>
+                        <tr><td><code>@sync/crossbeam</code></td><td><a href="https://github.com/murphsicles/crossbeam">murphsicles/crossbeam</a></td></tr>
+                        <tr><td><code>@sync/parking_lot</code></td><td><a href="https://github.com/murphsicles/parking_lot">murphsicles/parking_lot</a></td></tr>
+                        <tr><td><code>@sys/getrandom</code></td><td><a href="https://github.com/murphsicles/getrandom">murphsicles/getrandom</a></td></tr>
+                        <tr><td><code>@sys/signal-hook</code></td><td><a href="https://github.com/murphsicles/signal-hook">murphsicles/signal-hook</a></td></tr>
+                        <tr><td><code>@text/unicode-width</code></td><td><a href="https://github.com/murphsicles/unicode-width">murphsicles/unicode-width</a></td></tr>
+                        <tr><td><code>@time/chrono</code></td><td><a href="https://github.com/murphsicles/chrono">murphsicles/chrono</a></td></tr>
+                        <tr><td><code>@time/time</code></td><td><a href="https://github.com/murphsicles/time">murphsicles/time</a></td></tr>
                     </tbody>
                 </table>
 
