@@ -80,4 +80,16 @@ pub mod queries {
             .await
             .unwrap_or(None)
     }
+
+    pub async fn get_home_stats(pool: &PgPool) -> (i64, i64) {
+        let pkg_count: Option<(i64,)> = sqlx::query_as("SELECT COUNT(DISTINCT name) FROM zorbs")
+            .fetch_optional(pool)
+            .await
+            .unwrap_or(None);
+        let total_dl: Option<(i64,)> = sqlx::query_as("SELECT COALESCE(SUM(downloads), 0) FROM zorbs")
+            .fetch_optional(pool)
+            .await
+            .unwrap_or(None);
+        (pkg_count.map(|r| r.0).unwrap_or(0), total_dl.map(|r| r.0).unwrap_or(0))
+    }
 }

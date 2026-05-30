@@ -44,6 +44,9 @@ pub async fn homepage(auth_session: AuthSession<UserBackend>, State(state): Stat
         html_str.replace_range(pos..pos + "<!-- AUTH_SLOT_MOBILE -->".len(), &auth_str);
     }
 
+    // Fetch aggregate stats for hero pills
+    let (total_packages, total_downloads) = queries::get_home_stats(&state.db).await;
+
     // Build dynamic trending cards from top downloaded zorbs
     let trending = queries::list_zorbs(&state.db).await;
     let trending_cards: String = trending.iter().map(|zorb| {
@@ -87,6 +90,21 @@ pub async fn homepage(auth_session: AuthSession<UserBackend>, State(state): Stat
     }).collect::<Vec<_>>().join("\n");
     html_str = html_str.replace("<!-- TRENDING_CARDS -->", &trending_cards);
 
+    // Inject stats pills into hero
+    let stats_pills = format!(
+        r##"<div class="flex justify-center gap-3 mt-4">
+            <div class="text-xs bg-emerald-500/10 text-emerald-400 px-4 py-1.5 rounded-full whitespace-nowrap font-medium">
+                📦 <span class="countup" data-target="{pkgs}">0</span> packages
+            </div>
+            <div class="text-xs bg-cyan-500/10 text-cyan-400 px-4 py-1.5 rounded-full whitespace-nowrap font-medium">
+                ⬇ <span class="countup" data-target="{dls}">0</span> downloads
+            </div>
+        </div>"##,
+        pkgs = total_packages,
+        dls = total_downloads,
+    );
+    html_str = html_str.replace("<!-- STATS_PILLS -->", &stats_pills);
+
     html! { (PreEscaped(html_str)) }
 }
 
@@ -128,6 +146,44 @@ pub async fn list_zorbs(State(_state): State<Arc<AppState>>) -> impl IntoRespons
     (StatusCode::OK, Json(json!({"zorbs": [], "total": 0})))
 }
 
+fn generate_minimal_zorb(name: &str, version: &str, description: &str, license: &str, repository: &Option<String>) -> Vec<u8> {
+    let mut buf = Vec::new();
+    let mut tar_builder = tar::Builder::new(flate2::write::GzEncoder::new(&mut buf, flate2::Compression::default()));
+
+    // zorb.toml
+    let toml_content = format!(
+        "[package]\nname = \"{}\"\nversion = \"{}\"\nedition = \"2026\"\ndescription = \"{}\"\nlicense = \"{}\"{}\n\n",
+        name,
+        version,
+        description,
+        license,
+        repository.as_ref().map(|r| format!("\nrepository = \"{}\"", r)).unwrap_or_default()
+    );
+    let mut header = tar::Header::new_gnu();
+    header.set_path("zorb.toml").unwrap();
+    header.set_size(toml_content.len() as u64);
+    header.set_mode(0o644);
+    header.set_cksum();
+    tar_builder.append(&header, std::io::Cursor::new(toml_content.as_bytes())).unwrap();
+
+    // Placeholder src/mod.z
+    let src_content = format!(
+        "// {} v{}\n// {}\n\npub fn version() -> &'static str {{\n    \"{}\"\n}}\n",
+        name, version, description, version
+    );
+    let mut header = tar::Header::new_gnu();
+    header.set_path("src/mod.z").unwrap();
+    header.set_size(src_content.len() as u64);
+    header.set_mode(0o644);
+    header.set_cksum();
+    tar_builder.append(&header, std::io::Cursor::new(src_content.as_bytes())).unwrap();
+
+    // Finalize gzip
+    let _ = tar_builder.finish().unwrap();
+    drop(tar_builder);
+    buf
+}
+
 pub async fn seed_official(State(state): State<Arc<AppState>>) -> Redirect {
     use serde_json::json;
     let official = vec![
@@ -153,6 +209,12 @@ pub async fn seed_official(State(state): State<Arc<AppState>>) -> Redirect {
         )
         .execute(&state.db)
         .await;
+
+        // Also generate and store a minimal .zorb file so downloads work out of the box
+        let filename = crate::utils::zorb_filename(name, version);
+        let repo_opt: Option<String> = repository.map(|s| s.to_string());
+        let zorb_bytes = generate_minimal_zorb(name, version, description, license, &repo_opt);
+        let _ = state.storage.store(&filename, &zorb_bytes).await;
     }
     Redirect::to("/")
 }
