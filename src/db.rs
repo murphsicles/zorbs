@@ -86,7 +86,7 @@ pub mod queries {
             .fetch_optional(pool)
             .await
             .unwrap_or(None);
-        let total_dl: Option<(i64,)> = sqlx::query_as("SELECT COALESCE(SUM(downloads), 0) FROM zorbs")
+        let total_dl: Option<(i64,)> = sqlx::query_as("SELECT COALESCE(SUM(downloads)::BIGINT, 0) FROM zorbs")
             .fetch_optional(pool)
             .await
             .unwrap_or(None);
