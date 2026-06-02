@@ -142,8 +142,34 @@ pub async fn health() -> impl IntoResponse {
     (StatusCode::OK, Json(json!({"status": "healthy", "service": "zorbs-registry"})))
 }
 
-pub async fn list_zorbs(State(_state): State<Arc<AppState>>) -> impl IntoResponse {
-    (StatusCode::OK, Json(json!({"zorbs": [], "total": 0})))
+pub async fn list_zorbs(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    use crate::models::Zorb;
+    match sqlx::query_as::<_, Zorb>(
+        "SELECT id, name, version, description, license, repository, owner_id, downloads, created_at, updated_at, dependencies, readme FROM zorbs ORDER BY downloads DESC"
+    )
+    .fetch_all(&state.db)
+    .await
+    {
+        Ok(zorbs) => {
+            let total = zorbs.len();
+            let zorbs_json: Vec<serde_json::Value> = zorbs.into_iter().map(|z| {
+                json!({
+                    "id": z.id,
+                    "name": z.name,
+                    "version": z.version,
+                    "description": z.description,
+                    "license": z.license,
+                    "repository": z.repository,
+                    "downloads": z.downloads,
+                    "owner_id": z.owner_id
+                })
+            }).collect();
+            (StatusCode::OK, Json(json!({"zorbs": zorbs_json, "total": total})))
+        }
+        Err(e) => {
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("DB query failed: {}", e), "zorbs": [], "total": 0})))
+        }
+    }
 }
 
 fn generate_minimal_zorb(name: &str, version: &str, description: &str, license: &str, repository: &Option<String>) -> Vec<u8> {
